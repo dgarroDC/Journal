@@ -80,4 +80,14 @@ public class ItemListWrapper
     {
         return _api.ItemListMarkHUDGetPromptList(_itemList);
     }
+
+    public List<ShipLogEntryListItem> GetItemsUI()
+    {
+        return _api.ItemListGetItemsUI(_itemList);
+    }
+
+    public int GetIndexUI(int index)
+    {
+        return _api.ItemListGetIndexUI(_itemList, index);
+    }
 }

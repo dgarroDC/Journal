@@ -28,11 +28,11 @@ public class JournalStore
             {
                 Entries = new List<Entry>() // I should probably use a default value or something
             };
-            SaveEntries();
+            SaveToDisk();
         }
     }
 
-    public void SaveEntries()
+    public void SaveToDisk()
     {
         Journal.Instance.ModHelper.Storage.Save(Data, _filePath);
     }

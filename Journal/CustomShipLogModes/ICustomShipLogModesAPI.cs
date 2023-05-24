@@ -24,4 +24,6 @@ public interface ICustomShipLogModesAPI
     public ShipLogFactListItem ItemListDescriptionFieldGetNextItem(MonoBehaviour itemList);
     public void ItemListMarkHUDRootEnable(MonoBehaviour itemList, bool enable);
     public ScreenPromptList ItemListMarkHUDGetPromptList(MonoBehaviour itemList);
+    public List<ShipLogEntryListItem> ItemListGetItemsUI(MonoBehaviour itemList);
+    public int ItemListGetIndexUI(MonoBehaviour itemList, int index);
 }
