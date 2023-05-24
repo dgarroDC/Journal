@@ -1,5 +1,5 @@
 ﻿<Project>
   <PropertyGroup>
-    <OutputPath>$(AppData)\OuterWildsModManager\OWML\Mods\Ernesto.Journal</OutputPath>
+    <OutputPath>$(AppData)\OuterWildsModManager\OWML\Mods\dgarro.Journal</OutputPath>
   </PropertyGroup>
 </Project>

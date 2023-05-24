@@ -1,28 +1,47 @@
-﻿using OWML.Common;
+﻿using System.IO;
+using Journal.CustomShipLogModes;
 using OWML.ModHelper;
+using UnityEngine;
 
 namespace Journal;
 
 public class Journal : ModBehaviour
 {
-    private void Awake()
-    {
-        // You won't be able to access OWML's mod helper in Awake.
-        // So you probably don't want to do anything here.
-        // Use Start() instead.
-    }
+    public static Journal Instance;
+
+    private JournalStore _store;
 
     private void Start()
     {
-        // Starting here, you'll have access to OWML's mod helper.
-        ModHelper.Console.WriteLine($"My mod {nameof(Journal)} is loaded!", MessageType.Success);
+        Instance = this;
+        // I guess I'm always doing this...
+        ModHelper.HarmonyHelper.AddPostfix<ShipLogController>("LateInitialize", typeof(Journal), nameof(SetupPatch));
+    }
+    
+    private static void SetupPatch() {
+        Instance.Setup();
+    }
 
+    private void Setup()
+    {
+        // Just copying this from Epicas, waiting for save framework!
+        string profileName = StandaloneProfileManager.SharedInstance?.currentProfile?.profileName ?? "XboxGamepassDefaultProfile";
+        _store = new JournalStore(profileName);
+        CreateMode();
+    }
 
-        // Example of accessing game code.
-        LoadManager.OnCompleteSceneLoad += (scene, loadScene) =>
+    private void CreateMode()
+    {
+        ICustomShipLogModesAPI customShipLogModesAPI =
+            ModHelper.Interaction.TryGetModApi<ICustomShipLogModesAPI>("dgarro.CustomShipLogModes");
+
+        customShipLogModesAPI.ItemListMake(true, true, itemList =>
         {
-            if (loadScene != OWScene.SolarSystem) return;
-            ModHelper.Console.WriteLine("Loaded into solar system!", MessageType.Success);
-        };
+            JournalMode journalMode = itemList.gameObject.AddComponent<JournalMode>();
+            journalMode.ItemList = new ItemListWrapper(customShipLogModesAPI, itemList);
+            journalMode.Store = _store;
+            journalMode.gameObject.name = nameof(JournalMode);
+            customShipLogModesAPI.AddMode(journalMode, () => true, () => JournalMode.Name);
+        });
     }
 }
