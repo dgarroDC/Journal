@@ -19,6 +19,7 @@ public class JournalMode : ShipLogMode
     private Text _questionMark;
     private List<CustomInputField> _entryInputs;
     private CustomInputField _firstDescInput;
+    private Image _firstDescBorderLine;
 
     public enum State
     {
@@ -51,8 +52,8 @@ public class JournalMode : ShipLogMode
         _firstDescInput.textComponent = firstDescText;
         _firstDescInput.enabled = false;
         _firstDescInput.lineType = CustomInputField.LineType.MultiLineNewline;
+        _firstDescBorderLine = _firstDescInput.transform.Find("EntryBorderLine").GetComponent<Image>();
         // TODO: Selection color alpha=1
-        // TODO: Disable EntryBorderLine
         // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
         // TODO: Clear + GetNextItem on edit desc
 
@@ -92,9 +93,15 @@ public class JournalMode : ShipLogMode
         if (Store.Data.Entries.Count > 0)
         {
             ItemList.DescriptionFieldClear();
-            ShipLogFactListItem item = ItemList.DescriptionFieldGetNextItem();
             int selectedIndex = ItemList.GetSelectedIndex();
-            item.DisplayText(Store.Data.Entries[selectedIndex].Description);
+            string description = Store.Data.Entries[selectedIndex].Description;
+            string[] facts = description.Split(new[] { "\n\n" },
+                StringSplitOptions.RemoveEmptyEntries);
+            foreach (string fact in facts)
+            {
+                ShipLogFactListItem item = ItemList.DescriptionFieldGetNextItem();
+                item.DisplayText(fact.TrimStart('\n'));
+            }
         }
     }
 
@@ -149,8 +156,8 @@ public class JournalMode : ShipLogMode
                     ItemList.DescriptionFieldClear();
                     ItemList.DescriptionFieldGetNextItem();
                     EnableInputField(_firstDescInput);
-                    // TODO: EntryBorderLine
-                    _currentState = State.EditingDescription;
+                    _firstDescBorderLine.enabled = false;
+                    _currentState = State.EditingDescription; 
                 }
                 break;
             case State.Renaming:
@@ -170,6 +177,7 @@ public class JournalMode : ShipLogMode
                     int selectedIndex = ItemList.GetSelectedIndex();
                     Store.Data.Entries[selectedIndex].Description = _firstDescInput.text;
                     DisableInputField(_firstDescInput);
+                    _firstDescBorderLine.enabled = true;
                     UpdateDescriptionField();
                     _currentState = State.Main;
                 }
