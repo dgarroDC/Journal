@@ -19,7 +19,7 @@ public class JournalStore
         }
         _filePath = Path.Combine(savesDirectory, profileName + ".json");
         // TODO: Backup save
-        Data = Journal.Instance.ModHelper.Storage.Load<SaveData>(_filePath);
+        Data = Journal.Instance.ModHelper.Storage.Load<SaveData>(_filePath, false);
         if (Data == default) 
         {
             // TODO: DON'T DO THIS IF THE FILE EXISTED
