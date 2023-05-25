@@ -1727,7 +1727,7 @@ namespace Journal
                     return EditState.Continue;
                 }
 
-                // LINES REMOVES - TODO: PATCH
+                // LINES REMOVED - TODO: PATCH
                 // // Submit
                 // case KeyCode.Return:
                 // case KeyCode.KeypadEnter:
@@ -2398,6 +2398,10 @@ namespace Journal
             }
             else
             {
+                // LINES REPLACED (TextGenerator bug with same char?) - TODO: Patch
+                m_DrawStart = 0;
+                m_DrawEnd = m_Text.Length;
+                return;
                 var characters = cachedInputTextGenerator.characters;
                 if (m_DrawEnd > cachedInputTextGenerator.characterCountVisible)
                     m_DrawEnd = cachedInputTextGenerator.characterCountVisible;
