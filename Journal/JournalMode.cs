@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Journal.CustomShipLogModes;
-using TMPro;
-using UnityEngine;
 using UnityEngine.UI;
-using Image = UnityEngine.UI.Image;
 
 namespace Journal;
 
@@ -16,11 +13,11 @@ public class JournalMode : ShipLogMode
     public JournalStore Store;
 
     public bool inputOn;
-    
+
     private Image _photo;
     private Text _questionMark;
     private List<CustomInputField> _entryInputs;
-    private CustomInputField _currentInput;
+    private CustomInputField _firstDescInput;
 
     public override void Initialize(ScreenPromptList centerPromptList, ScreenPromptList upperRightPromptList, OWAudioSource oneShotSource)
     {
@@ -38,6 +35,17 @@ public class JournalMode : ShipLogMode
             // TODO: max length
             _entryInputs.Add(input);
         }
+        
+        ItemList.DescriptionFieldClear();
+        Text firstDescText = ItemList.DescriptionFieldGetNextItem()._text;
+        _firstDescInput = firstDescText.gameObject.AddComponent<CustomInputField>();
+        _firstDescInput.textComponent = firstDescText;
+        _firstDescInput.enabled = false;
+        _firstDescInput.lineType = CustomInputField.LineType.MultiLineNewline;
+        // TODO: Selection color alpha=1
+        // TODO: Disable EntryBorderLine
+        // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
+        // TODO: Clear + GetNextItem on edit desc
     }
 
     public override void EnterMode(string entryID = "", List<ShipLogFact> revealQueue = null)
@@ -84,12 +92,12 @@ public class JournalMode : ShipLogMode
             else if (OWInput.IsNewlyPressed(InputLibrary.enter))
             {
                 int selectedIndex = ItemList.GetSelectedIndex();
-                _currentInput = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
-                _currentInput.text = Store.Data.Entries[selectedIndex].Name;
-                _currentInput.enabled = true;
+                CustomInputField inputField = _firstDescInput; //_entryInputs[ItemList.GetIndexUI(selectedIndex)];
+                inputField.text = Store.Data.Entries[selectedIndex].Name;
+                inputField.enabled = true;
                 OWInput.ChangeInputMode(InputMode.KeyboardInput);
                 Locator.GetPauseCommandListener().AddPauseCommandLock();
-                _currentInput.ActivateInputField();
+                inputField.ActivateInputField();
                 inputOn = true;
                 // TODO: Fix not showing full text if all chars the same???
             }
@@ -99,13 +107,14 @@ public class JournalMode : ShipLogMode
             if (OWInput.IsNewlyPressed(InputLibrary.escape))
             {
                 int selectedIndex = ItemList.GetSelectedIndex();
-                Store.Data.Entries[selectedIndex].Name = _currentInput.text;
+                CustomInputField inputField = _firstDescInput; //_entryInputs[ItemList.GetIndexUI(selectedIndex)];
+                Store.Data.Entries[selectedIndex].Name = inputField.text;
                 UpdateItems();
                 inputOn = false;
-                _currentInput.DeactivateInputField();
+                inputField.DeactivateInputField();
                 Locator.GetPauseCommandListener().RemovePauseCommandLock();
                 OWInput.RestorePreviousInputs();
-                _currentInput.enabled = false;
+                inputField.enabled = false;
             }
         }
     }

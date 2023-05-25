@@ -1,9 +1,6 @@
-﻿using System;
-using System.IO;
-using Journal.CustomShipLogModes;
+﻿using Journal.CustomShipLogModes;
 using OWML.ModHelper;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Journal;
 
