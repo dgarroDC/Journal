@@ -35,6 +35,7 @@ public class JournalMode : ShipLogMode
             CustomInputField input = text.gameObject.AddComponent<CustomInputField>();
             input.textComponent = text;
             input.enabled = false;
+            // TODO: max length
             _entryInputs.Add(input);
         }
     }
@@ -90,6 +91,7 @@ public class JournalMode : ShipLogMode
                 Locator.GetPauseCommandListener().AddPauseCommandLock();
                 _currentInput.ActivateInputField();
                 inputOn = true;
+                // TODO: Fix not showing full text if all chars the same???
             }
         }
         else
