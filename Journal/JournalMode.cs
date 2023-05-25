@@ -14,6 +14,7 @@ public class JournalMode : ShipLogMode
     public JournalStore Store;
  
     private State _currentState;
+    private bool _shouldRenameNextUpdate;
 
     private Image _photo;
     private Text _questionMark;
@@ -129,35 +130,44 @@ public class JournalMode : ShipLogMode
                 if (ItemList.UpdateList() != 0)
                 {
                     UpdateDescriptionField();
+                    _shouldRenameNextUpdate = false; 
+                    // Just in case it's moved just next frame after creation,
+                    // we need to update the list after the creation
+                    // (maybe CSLM should add UpdateListUI() without navigation?)
                 }
             
-                if (OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
+                if (!_shouldRenameNextUpdate && OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
                 {
                     List<JournalStore.Entry> entries = Store.Data.Entries;
                     int newIndex = entries.Count == 0? 0 : ItemList.GetSelectedIndex() + 1;
                     JournalStore.Entry newEntry = new JournalStore.Entry();
                     entries.Insert(newIndex, newEntry);
                     UpdateItems();
+                    UpdateDescriptionField();
                     ItemList.SetSelectedIndex(newIndex);
-                    // TODO: Update List UI without changing pos?
+                    _shouldRenameNextUpdate = true;
                 }
-                else if (OWInput.IsNewlyPressed(InputLibrary.enter))
+                else if (_shouldRenameNextUpdate || OWInput.IsNewlyPressed(InputLibrary.enter))
                 {
-                    int selectedIndex = ItemList.GetSelectedIndex();
-                    CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
-                    inputField.text = Store.Data.Entries[selectedIndex].Name;
-                    EnableInputField(inputField);
-                    _currentState = State.Renaming;
-                }
-                else if (OWInput.IsNewlyPressed(InputLibrary.map)) // TODO: Another one, don't waste gamepad buttons, maybe hold for this one?
-                {
-                    int selectedIndex = ItemList.GetSelectedIndex();
-                    _firstDescInput.text = Store.Data.Entries[selectedIndex].Description;
-                    ItemList.DescriptionFieldClear();
-                    ItemList.DescriptionFieldGetNextItem();
-                    EnableInputField(_firstDescInput);
-                    _firstDescBorderLine.enabled = false;
-                    _currentState = State.EditingDescription; 
+                    if (_shouldRenameNextUpdate || OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR))
+                    {
+                        int selectedIndex = ItemList.GetSelectedIndex();
+                        CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
+                        inputField.text = Store.Data.Entries[selectedIndex].Name;
+                        EnableInputField(inputField);
+                        _currentState = State.Renaming;
+                        _shouldRenameNextUpdate = false;
+                    }
+                    else
+                    {
+                        int selectedIndex = ItemList.GetSelectedIndex();
+                        _firstDescInput.text = Store.Data.Entries[selectedIndex].Description;
+                        ItemList.DescriptionFieldClear();
+                        ItemList.DescriptionFieldGetNextItem();
+                        EnableInputField(_firstDescInput);
+                        _firstDescBorderLine.enabled = false;
+                        _currentState = State.EditingDescription; 
+                    }
                 }
                 break;
             case State.Renaming:
