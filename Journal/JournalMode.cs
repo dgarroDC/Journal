@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Journal.CustomShipLogModes;
+using OWML.Common;
 using UnityEngine.UI;
 
 namespace Journal;
@@ -11,14 +12,22 @@ public class JournalMode : ShipLogMode
 
     public ItemListWrapper ItemList;
     public JournalStore Store;
-
-    public bool inputOn;
+ 
+    private State _currentState;
 
     private Image _photo;
     private Text _questionMark;
     private List<CustomInputField> _entryInputs;
     private CustomInputField _firstDescInput;
 
+    public enum State
+    {
+        Disabled,
+        Main,
+        Renaming,
+        EditingDescription
+    }
+    
     public override void Initialize(ScreenPromptList centerPromptList, ScreenPromptList upperRightPromptList, OWAudioSource oneShotSource)
     {
         ItemList.SetName(Name);
@@ -46,12 +55,25 @@ public class JournalMode : ShipLogMode
         // TODO: Disable EntryBorderLine
         // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
         // TODO: Clear + GetNextItem on edit desc
+
+        _currentState = State.Disabled;
+    }
+
+    public bool UsingInput()
+    {
+        return _currentState is State.Renaming or State.EditingDescription;
     }
 
     public override void EnterMode(string entryID = "", List<ShipLogFact> revealQueue = null)
     {
         ItemList.Open();
         UpdateItems();
+
+        if (_currentState != State.Disabled)
+        {
+            Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on enter!", MessageType.Error);
+        }
+        _currentState = State.Main;
     }
 
     private void UpdateItems()
@@ -69,65 +91,74 @@ public class JournalMode : ShipLogMode
         ItemList.Close();
         // TODO: Save more often?
         Store.SaveToDisk();
+
+        if (_currentState != State.Main)
+        {
+            Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on exit!", MessageType.Error);
+        }
+        _currentState = State.Disabled;
     }
 
     public override void UpdateMode()
     {
         // TODO: What happens if desc field is scrolled while editing???
 
-        if (!inputOn)
+        switch (_currentState)
         {
-            ItemList.UpdateList();
+            case State.Main:
+                ItemList.UpdateList();
             
-            if (OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
-            {
-                List<JournalStore.Entry> entries = Store.Data.Entries;
-                int newIndex = entries.Count == 0? 0 : ItemList.GetSelectedIndex() + 1;
-                JournalStore.Entry newEntry = new JournalStore.Entry("New Entry " + newIndex);
-                entries.Insert(newIndex, newEntry);
-                UpdateItems();
-                ItemList.SetSelectedIndex(newIndex);
-                // TODO: Update List UI without changing pos?
-            }
-            else if (OWInput.IsNewlyPressed(InputLibrary.enter))
-            {
-                int selectedIndex = ItemList.GetSelectedIndex();
-                CustomInputField inputField = _firstDescInput; //_entryInputs[ItemList.GetIndexUI(selectedIndex)];
-                inputField.text = Store.Data.Entries[selectedIndex].Name;
-                inputField.enabled = true;
-                OWInput.ChangeInputMode(InputMode.KeyboardInput);
-                Locator.GetPauseCommandListener().AddPauseCommandLock();
-                inputField.ActivateInputField();
-                inputOn = true;
-                // TODO: Fix not showing full text if all chars the same???
-            }
-        }
-        else
-        {
-            if (OWInput.IsNewlyPressed(InputLibrary.escape))
-            {
-                int selectedIndex = ItemList.GetSelectedIndex();
-                CustomInputField inputField = _firstDescInput; //_entryInputs[ItemList.GetIndexUI(selectedIndex)];
-                Store.Data.Entries[selectedIndex].Name = inputField.text;
-                UpdateItems();
-                inputOn = false;
-                inputField.DeactivateInputField();
-                Locator.GetPauseCommandListener().RemovePauseCommandLock();
-                OWInput.RestorePreviousInputs();
-                inputField.enabled = false;
-            }
+                if (OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
+                {
+                    List<JournalStore.Entry> entries = Store.Data.Entries;
+                    int newIndex = entries.Count == 0? 0 : ItemList.GetSelectedIndex() + 1;
+                    JournalStore.Entry newEntry = new JournalStore.Entry("New Entry");
+                    entries.Insert(newIndex, newEntry);
+                    UpdateItems();
+                    ItemList.SetSelectedIndex(newIndex);
+                    // TODO: Update List UI without changing pos?
+                }
+                else if (OWInput.IsNewlyPressed(InputLibrary.enter))
+                {
+                    int selectedIndex = ItemList.GetSelectedIndex();
+                    CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
+                    inputField.text = Store.Data.Entries[selectedIndex].Name;
+                    inputField.enabled = true;
+                    OWInput.ChangeInputMode(InputMode.KeyboardInput);
+                    Locator.GetPauseCommandListener().AddPauseCommandLock();
+                    inputField.ActivateInputField();
+                    _currentState = State.Renaming;
+                }
+                break;
+            case State.Renaming:
+                if (OWInput.IsNewlyPressed(InputLibrary.escape))
+                {
+                    int selectedIndex = ItemList.GetSelectedIndex();
+                    CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
+                    Store.Data.Entries[selectedIndex].Name = inputField.text;
+                    UpdateItems();
+                    inputField.DeactivateInputField();
+                    Locator.GetPauseCommandListener().RemovePauseCommandLock();
+                    OWInput.RestorePreviousInputs();
+                    inputField.enabled = false;
+                    _currentState = State.Main;
+                }
+                break;
+            default:
+                Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on update!", MessageType.Error);
+                break;
         }
     }
 
     public override bool AllowModeSwap()
     {
-        return !inputOn;
+        return _currentState == State.Main;
     }
 
     public override bool AllowCancelInput()
     {
         // TODO: fix _exitPrompt not changing!
-        return !inputOn;
+        return _currentState == State.Main;
     }
 
     public override void OnEnterComputer()

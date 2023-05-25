@@ -54,7 +54,7 @@ public class Journal : ModBehaviour
         if (!_setupDone) return;
 
         // Hack to get updates on other input mode... 
-        if (_journalMode.inputOn)
+        if (_journalMode.UsingInput())
         {
             _journalMode.UpdateMode();
         }
@@ -65,7 +65,8 @@ public class Journal : ModBehaviour
         if (!_setupDone) return;
 
         // Maybe it would be better to patch CursorManager...
-        if (_journalMode.inputOn)
+        // TODO: Yes, do it, this seems to cause some flickering? Although no idea how to reproduce
+        if (_journalMode.UsingInput())
         {
             Cursor.visible = false;
         }
