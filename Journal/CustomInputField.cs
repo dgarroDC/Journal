@@ -1167,6 +1167,7 @@ namespace Journal
         /// </example>
         protected void OnFocus()
         {
+            // TODO: Do select all if text is the default one
             //SelectAll();
             MoveTextEnd(false); // LINE REPLACED TODO: PATCH
         }

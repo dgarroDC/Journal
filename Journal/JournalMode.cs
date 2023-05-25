@@ -68,6 +68,7 @@ public class JournalMode : ShipLogMode
     {
         ItemList.Open();
         UpdateItems();
+        UpdateDescriptionField();
 
         if (_currentState != State.Disabled)
         {
@@ -85,6 +86,17 @@ public class JournalMode : ShipLogMode
         }
         ItemList.SetItems(items);
     }
+    
+    private void UpdateDescriptionField()
+    {
+        if (Store.Data.Entries.Count > 0)
+        {
+            ItemList.DescriptionFieldClear();
+            ShipLogFactListItem item = ItemList.DescriptionFieldGetNextItem();
+            int selectedIndex = ItemList.GetSelectedIndex();
+            item.DisplayText(Store.Data.Entries[selectedIndex].Description);
+        }
+    }
 
     public override void ExitMode()
     {
@@ -101,18 +113,22 @@ public class JournalMode : ShipLogMode
 
     public override void UpdateMode()
     {
+        // TODO: Add Store.Data.Entries.Count > 0 check on most actions..
         // TODO: What happens if desc field is scrolled while editing???
 
         switch (_currentState)
         {
             case State.Main:
-                ItemList.UpdateList();
+                if (ItemList.UpdateList() != 0)
+                {
+                    UpdateDescriptionField();
+                }
             
                 if (OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
                 {
                     List<JournalStore.Entry> entries = Store.Data.Entries;
                     int newIndex = entries.Count == 0? 0 : ItemList.GetSelectedIndex() + 1;
-                    JournalStore.Entry newEntry = new JournalStore.Entry("New Entry");
+                    JournalStore.Entry newEntry = new JournalStore.Entry();
                     entries.Insert(newIndex, newEntry);
                     UpdateItems();
                     ItemList.SetSelectedIndex(newIndex);
@@ -123,11 +139,18 @@ public class JournalMode : ShipLogMode
                     int selectedIndex = ItemList.GetSelectedIndex();
                     CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
                     inputField.text = Store.Data.Entries[selectedIndex].Name;
-                    inputField.enabled = true;
-                    OWInput.ChangeInputMode(InputMode.KeyboardInput);
-                    Locator.GetPauseCommandListener().AddPauseCommandLock();
-                    inputField.ActivateInputField();
+                    EnableInputField(inputField);
                     _currentState = State.Renaming;
+                }
+                else if (OWInput.IsNewlyPressed(InputLibrary.map)) // TODO: Another one, don't waste gamepad buttons, maybe hold for this one?
+                {
+                    int selectedIndex = ItemList.GetSelectedIndex();
+                    _firstDescInput.text = Store.Data.Entries[selectedIndex].Description;
+                    ItemList.DescriptionFieldClear();
+                    ItemList.DescriptionFieldGetNextItem();
+                    EnableInputField(_firstDescInput);
+                    // TODO: EntryBorderLine
+                    _currentState = State.EditingDescription;
                 }
                 break;
             case State.Renaming:
@@ -136,11 +159,18 @@ public class JournalMode : ShipLogMode
                     int selectedIndex = ItemList.GetSelectedIndex();
                     CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
                     Store.Data.Entries[selectedIndex].Name = inputField.text;
+                    DisableInputField(inputField);
                     UpdateItems();
-                    inputField.DeactivateInputField();
-                    Locator.GetPauseCommandListener().RemovePauseCommandLock();
-                    OWInput.RestorePreviousInputs();
-                    inputField.enabled = false;
+                    _currentState = State.Main;
+                }
+                break;
+            case State.EditingDescription:
+                if (OWInput.IsNewlyPressed(InputLibrary.escape))
+                {
+                    int selectedIndex = ItemList.GetSelectedIndex();
+                    Store.Data.Entries[selectedIndex].Description = _firstDescInput.text;
+                    DisableInputField(_firstDescInput);
+                    UpdateDescriptionField();
                     _currentState = State.Main;
                 }
                 break;
@@ -148,6 +178,22 @@ public class JournalMode : ShipLogMode
                 Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on update!", MessageType.Error);
                 break;
         }
+    }
+
+    private static void DisableInputField(CustomInputField inputField)
+    {
+        inputField.DeactivateInputField();
+        Locator.GetPauseCommandListener().RemovePauseCommandLock();
+        OWInput.RestorePreviousInputs();
+        inputField.enabled = false;
+    }
+
+    private static void EnableInputField(CustomInputField inputField)
+    {
+        inputField.enabled = true;
+        OWInput.ChangeInputMode(InputMode.KeyboardInput);
+        Locator.GetPauseCommandListener().AddPauseCommandLock();
+        inputField.ActivateInputField();
     }
 
     public override bool AllowModeSwap()

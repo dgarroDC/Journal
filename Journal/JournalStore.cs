@@ -45,10 +45,14 @@ public class JournalStore
     public class Entry
     {
         public string Name;
+        public string Description;
 
-        public Entry(string name)
+        public Entry()
         {
-            Name = name;
+            // TODO: Translation
+            Name = "New Entry";
+            Description = "Write about the entry here.\n\n" +
+                          "You can also create different items by leaving empty lines between them.";
         }
     }
 }
