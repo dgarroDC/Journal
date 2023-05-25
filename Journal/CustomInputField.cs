@@ -1167,7 +1167,8 @@ namespace Journal
         /// </example>
         protected void OnFocus()
         {
-            SelectAll();
+            //SelectAll();
+            MoveTextEnd(false); // LINE REPLACED TODO: PATCH
         }
 
         /// <summary>
@@ -1726,22 +1727,23 @@ namespace Journal
                     return EditState.Continue;
                 }
 
-                // Submit
-                case KeyCode.Return:
-                case KeyCode.KeypadEnter:
-                {
-                    if (lineType != LineType.MultiLineNewline)
-                    {
-                        return EditState.Finish;
-                    }
-                    break;
-                }
-
-                case KeyCode.Escape:
-                {
-                    m_WasCanceled = true;
-                    return EditState.Finish;
-                }
+                // LINES REMOVES - TODO: PATCH
+                // // Submit
+                // case KeyCode.Return:
+                // case KeyCode.KeypadEnter:
+                // {
+                //     if (lineType != LineType.MultiLineNewline)
+                //     {
+                //         return EditState.Finish;
+                //     }
+                //     break;
+                // }
+                //
+                // case KeyCode.Escape:
+                // {
+                //     m_WasCanceled = true;
+                //     return EditState.Finish;
+                // }
             }
 
             char c = evt.character;
