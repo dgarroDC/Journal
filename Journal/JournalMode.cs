@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Journal.CustomShipLogModes;
 using OWML.Common;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Journal;
@@ -22,6 +23,10 @@ public class JournalMode : ShipLogMode
     private CustomInputField _firstDescInput;
     private Image _firstDescBorderLine;
 
+    private readonly Color _selectionTextColor = new(0f, 0.2f, 0.3f);
+    private readonly Color _editingTextColor = new(0.6f, 1f, 0.75f);
+    private Color _prevTextColor;
+
     public enum State
     {
         Disabled,
@@ -40,25 +45,29 @@ public class JournalMode : ShipLogMode
         foreach (ShipLogEntryListItem entryListItem in ItemList.GetItemsUI())
         {
             Text text = entryListItem._nameField;
-            CustomInputField input = text.gameObject.AddComponent<CustomInputField>();
-            input.textComponent = text;
-            input.enabled = false;
+            CustomInputField input = AddInputFieldInput(text);
             // TODO: max length
             _entryInputs.Add(input);
         }
         
         ItemList.DescriptionFieldClear();
         Text firstDescText = ItemList.DescriptionFieldGetNextItem()._text;
-        _firstDescInput = firstDescText.gameObject.AddComponent<CustomInputField>();
-        _firstDescInput.textComponent = firstDescText;
-        _firstDescInput.enabled = false;
+        _firstDescInput = AddInputFieldInput(firstDescText);
         _firstDescInput.lineType = CustomInputField.LineType.MultiLineNewline;
         _firstDescBorderLine = _firstDescInput.transform.Find("EntryBorderLine").GetComponent<Image>();
-        // TODO: Selection color alpha=1
-        // TODO: Increase caret width
         // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
 
         _currentState = State.Disabled;
+    }
+
+    private CustomInputField AddInputFieldInput(Text text)
+    {
+        CustomInputField input = text.gameObject.AddComponent<CustomInputField>();
+        input.textComponent = text;
+        input.caretWidth = 2; // Otherwise it's too thin
+        input.selectionColor = _selectionTextColor; // Important alpha=1 for overlap in description field
+        input.enabled = false;
+        return input;
     }
 
     public bool UsingInput()
@@ -247,10 +256,13 @@ public class JournalMode : ShipLogMode
         OWInput.ChangeInputMode(InputMode.KeyboardInput);
         Locator.GetPauseCommandListener().AddPauseCommandLock();
         inputField.ActivateInputField();
+        _prevTextColor = inputField.textComponent.color;
+        inputField.textComponent.color = _editingTextColor;
     }
 
-    private static void DisableInputField(CustomInputField inputField)
+    private void DisableInputField(CustomInputField inputField)
     {
+        inputField.textComponent.color = _prevTextColor;
         inputField.DeactivateInputField();
         Locator.GetPauseCommandListener().RemovePauseCommandLock();
         OWInput.RestorePreviousInputs();
