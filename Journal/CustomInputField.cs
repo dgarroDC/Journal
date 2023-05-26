@@ -1166,11 +1166,20 @@ namespace Journal
         /// </code>
         /// </example>
         protected void OnFocus()
-        {
-            // TODO: Do select all if text is the default one
-            //SelectAll();
-            MoveTextEnd(false); // LINE REPLACED TODO: PATCH
+        { 
+            // LINES REPLACED TODO: PATCH
+            if (onFocusSelectAll) {
+                SelectAll();
+            }
+            else
+            {
+                MoveTextEnd(false);
+            }
+            // SelectAll();
         }
+
+        // LINE ADDED - TODO: PATCH
+        public bool onFocusSelectAll;
 
         /// <summary>
         /// Highlight the whole InputField.

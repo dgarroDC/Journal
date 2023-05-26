@@ -14,7 +14,7 @@ public class JournalMode : ShipLogMode
     public JournalStore Store;
  
     private State _currentState;
-    private bool _shouldRenameNextUpdate;
+    private bool _creatingNewEntry;
 
     private Image _photo;
     private Text _questionMark;
@@ -130,66 +130,38 @@ public class JournalMode : ShipLogMode
                 if (ItemList.UpdateList() != 0)
                 {
                     UpdateDescriptionField();
-                    _shouldRenameNextUpdate = false; 
+                    _creatingNewEntry = false; 
                     // Just in case it's moved just next frame after creation,
                     // we need to update the list after the creation
                     // (maybe CSLM should add UpdateListUI() without navigation?)
                 }
             
-                if (!_shouldRenameNextUpdate && OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
+                if (!_creatingNewEntry && OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
                 {
-                    List<JournalStore.Entry> entries = Store.Data.Entries;
-                    int newIndex = entries.Count == 0? 0 : ItemList.GetSelectedIndex() + 1;
-                    JournalStore.Entry newEntry = new JournalStore.Entry();
-                    entries.Insert(newIndex, newEntry);
-                    UpdateItems();
-                    UpdateDescriptionField();
-                    ItemList.SetSelectedIndex(newIndex);
-                    _shouldRenameNextUpdate = true;
+                    CreateEntry();
                 }
-                else if (_shouldRenameNextUpdate || OWInput.IsNewlyPressed(InputLibrary.enter))
+                else if (_creatingNewEntry || OWInput.IsNewlyPressed(InputLibrary.enter))
                 {
-                    if (_shouldRenameNextUpdate || OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR))
+                    if (_creatingNewEntry || OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR))
                     {
-                        int selectedIndex = ItemList.GetSelectedIndex();
-                        CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
-                        inputField.text = Store.Data.Entries[selectedIndex].Name;
-                        EnableInputField(inputField);
-                        _currentState = State.Renaming;
-                        _shouldRenameNextUpdate = false;
+                        RenameEntry();
                     }
                     else
                     {
-                        int selectedIndex = ItemList.GetSelectedIndex();
-                        _firstDescInput.text = Store.Data.Entries[selectedIndex].Description;
-                        ItemList.DescriptionFieldClear();
-                        ItemList.DescriptionFieldGetNextItem();
-                        EnableInputField(_firstDescInput);
-                        _firstDescBorderLine.enabled = false;
-                        _currentState = State.EditingDescription; 
+                        EditDescription();
                     }
                 }
                 break;
             case State.Renaming:
                 if (OWInput.IsNewlyPressed(InputLibrary.escape))
                 {
-                    int selectedIndex = ItemList.GetSelectedIndex();
-                    CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
-                    Store.Data.Entries[selectedIndex].Name = inputField.text;
-                    DisableInputField(inputField);
-                    UpdateItems();
-                    _currentState = State.Main;
+                    RenameEntryEnd();
                 }
                 break;
             case State.EditingDescription:
                 if (OWInput.IsNewlyPressed(InputLibrary.escape))
                 {
-                    int selectedIndex = ItemList.GetSelectedIndex();
-                    Store.Data.Entries[selectedIndex].Description = _firstDescInput.text;
-                    DisableInputField(_firstDescInput);
-                    _firstDescBorderLine.enabled = true;
-                    UpdateDescriptionField();
-                    _currentState = State.Main;
+                    EditDescriptionEnd();
                 }
                 break;
             default:
@@ -198,20 +170,82 @@ public class JournalMode : ShipLogMode
         }
     }
 
+    private void CreateEntry()
+    {
+        List<JournalStore.Entry> entries = Store.Data.Entries;
+        int newIndex = entries.Count == 0 ? 0 : ItemList.GetSelectedIndex() + 1;
+        JournalStore.Entry newEntry = new JournalStore.Entry();
+        entries.Insert(newIndex, newEntry);
+        UpdateItems();
+        UpdateDescriptionField();
+        ItemList.SetSelectedIndex(newIndex);
+        _creatingNewEntry = true; // TODO: RenameEntry()? We need to update UI before...
+    }
+    
+    private void RenameEntry()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
+        inputField.text = Store.Data.Entries[selectedIndex].Name;
+        EnableInputField(inputField);
+        _currentState = State.Renaming;
+    }
+
+    private void RenameEntryEnd()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
+        Store.Data.Entries[selectedIndex].Name = inputField.text;
+        DisableInputField(inputField);
+        UpdateItems();
+        if (_creatingNewEntry)
+        {
+            // TODO: Consider this in the "confirm" prompt?
+            EditDescription();
+        }
+        else
+        {
+            _currentState = State.Main;
+        }
+    }
+
+    private void EditDescription()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        _firstDescInput.text = Store.Data.Entries[selectedIndex].Description;
+        ItemList.DescriptionFieldClear();
+        ItemList.DescriptionFieldGetNextItem();
+        EnableInputField(_firstDescInput);
+        _firstDescBorderLine.enabled = false;
+        _currentState = State.EditingDescription;
+    }
+
+    private void EditDescriptionEnd()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        Store.Data.Entries[selectedIndex].Description = _firstDescInput.text;
+        DisableInputField(_firstDescInput);
+        _firstDescBorderLine.enabled = true;
+        UpdateDescriptionField();
+        _currentState = State.Main;
+        _creatingNewEntry = false;
+    }
+
+    private void EnableInputField(CustomInputField inputField)
+    {
+        inputField.onFocusSelectAll = _creatingNewEntry;
+        inputField.enabled = true;
+        OWInput.ChangeInputMode(InputMode.KeyboardInput);
+        Locator.GetPauseCommandListener().AddPauseCommandLock();
+        inputField.ActivateInputField();
+    }
+
     private static void DisableInputField(CustomInputField inputField)
     {
         inputField.DeactivateInputField();
         Locator.GetPauseCommandListener().RemovePauseCommandLock();
         OWInput.RestorePreviousInputs();
         inputField.enabled = false;
-    }
-
-    private static void EnableInputField(CustomInputField inputField)
-    {
-        inputField.enabled = true;
-        OWInput.ChangeInputMode(InputMode.KeyboardInput);
-        Locator.GetPauseCommandListener().AddPauseCommandLock();
-        inputField.ActivateInputField();
     }
 
     public override bool AllowModeSwap()
