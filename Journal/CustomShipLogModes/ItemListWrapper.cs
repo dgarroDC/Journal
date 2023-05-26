@@ -31,6 +31,11 @@ public class ItemListWrapper
         return _api.ItemListUpdateList(_itemList);
     }
 
+    public void UpdateListUI()
+    {
+        _api.ItemListUpdateListUI(_itemList);
+    }
+
     public void SetName(string nameValue)
     {
         _api.ItemListSetName(_itemList, nameValue);

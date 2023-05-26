@@ -57,7 +57,6 @@ public class JournalMode : ShipLogMode
         // TODO: Selection color alpha=1
         // TODO: Increase caret width
         // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
-        // TODO: Clear + GetNextItem on edit desc
 
         _currentState = State.Disabled;
     }
@@ -131,11 +130,6 @@ public class JournalMode : ShipLogMode
                 int prevSelectedIndex = ItemList.GetSelectedIndex();
                 if (ItemList.UpdateList() != 0)
                 {
-                    // Just in case it's moved just next frame after creation,
-                    // we need to update the list after the creation
-                    // (maybe CSLM should add UpdateListUI() without navigation?)
-                    _creatingNewEntry = false;
-
                     bool movingEntry = OWInput.IsPressed(InputLibrary.thrustUp);
                     if (movingEntry)
                     {
@@ -143,8 +137,8 @@ public class JournalMode : ShipLogMode
                         (Store.Data.Entries[prevSelectedIndex], Store.Data.Entries[newSelectedIndex]) =
                             (Store.Data.Entries[newSelectedIndex], Store.Data.Entries[prevSelectedIndex]);
                         UpdateItems();
+                        ItemList.UpdateListUI(); // Avoid ugly frame, show the updated list now
                         return; // Don't do any additional action when moving (also no need to change description)
-                        // TODO: A UpdateListUI() would be cool here to avoid ugly frame
                     }
 
                     UpdateDescriptionField();
@@ -152,7 +146,7 @@ public class JournalMode : ShipLogMode
 
                 // Keyboard-required actions, all with enter
                 bool shiftPressed = OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR);
-                if (_creatingNewEntry || OWInput.IsPressed(InputLibrary.enter, 0.5f))
+                if (OWInput.IsPressed(InputLibrary.enter, 0.5f))
                 {
                     RenameEntry();
                 }
@@ -192,7 +186,9 @@ public class JournalMode : ShipLogMode
         ItemList.SetSelectedIndex(newIndex);
         UpdateItems();
         UpdateDescriptionField();
-        _creatingNewEntry = true; // TODO: RenameEntry()? We need to update UI before...
+        ItemList.UpdateListUI(); // We want to update the UI but not move because of renaming
+        _creatingNewEntry = true; // Only really necessary to remember to go to edit description next
+        RenameEntry();
     }
     
     private void RenameEntry()
