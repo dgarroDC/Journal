@@ -93,7 +93,7 @@ public class JournalMode : ShipLogMode
         List<Tuple<string,bool,bool,bool>> items = new();
         foreach (JournalStore.Entry entry in Store.Data.Entries)
         {
-            items.Add(new Tuple<string, bool, bool, bool>(entry.Name, false, false, false));
+            items.Add(new Tuple<string, bool, bool, bool>(entry.Name, false, false, entry.HasMoreToExplore));
         }
         ItemList.SetItems(items);
     }
@@ -104,13 +104,21 @@ public class JournalMode : ShipLogMode
         {
             ItemList.DescriptionFieldClear();
             int selectedIndex = ItemList.GetSelectedIndex();
-            string description = Store.Data.Entries[selectedIndex].Description;
+            JournalStore.Entry selectedEntry = Store.Data.Entries[selectedIndex];
+            string description = selectedEntry.Description;
             string[] facts = description.Split(new[] { "\n\n" },
                 StringSplitOptions.RemoveEmptyEntries);
             foreach (string fact in facts)
             {
                 ShipLogFactListItem item = ItemList.DescriptionFieldGetNextItem();
                 item.DisplayText(fact.TrimStart('\n'));
+            }
+
+            if (selectedEntry.HasMoreToExplore)
+            {
+                ShipLogFactListItem moreToExploreItem = ItemList.DescriptionFieldGetNextItem();
+                // Like ShipLogEntryDescriptionField.SetEntry does...
+                moreToExploreItem.DisplayText(UITextLibrary.GetString(UITextType.ShipLogMoreThere));
             }
         }
     }
@@ -166,6 +174,11 @@ public class JournalMode : ShipLogMode
                 else if (OWInput.IsNewlyReleased(InputLibrary.enter)) // Released because the user may want to hold it...
                 {
                     EditDescription();
+                }
+                
+                else if (OWInput.IsNewlyPressed(InputLibrary.interact))
+                {
+                    ToggleMoreToExplore();
                 }
                 break;
             case State.Renaming:
@@ -267,6 +280,14 @@ public class JournalMode : ShipLogMode
         Locator.GetPauseCommandListener().RemovePauseCommandLock();
         OWInput.RestorePreviousInputs();
         inputField.enabled = false;
+    }
+    
+    private void ToggleMoreToExplore()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        Store.Data.Entries[selectedIndex].HasMoreToExplore = !Store.Data.Entries[selectedIndex].HasMoreToExplore;
+        UpdateItems(); // No need to update the UI this frame
+        UpdateDescriptionField(); // Remember that it has an item for more to explore
     }
 
     public override bool AllowModeSwap()

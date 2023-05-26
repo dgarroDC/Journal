@@ -46,6 +46,7 @@ public class JournalStore
     {
         public string Name;
         public string Description;
+        public bool HasMoreToExplore;
 
         public Entry()
         {
@@ -53,6 +54,7 @@ public class JournalStore
             Name = "New Entry";
             Description = "Write about the entry here.\n\n" +
                           "You can also create different items by leaving empty lines between them.";
+            HasMoreToExplore = false;
         }
     }
 }
