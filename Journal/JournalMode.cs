@@ -55,6 +55,7 @@ public class JournalMode : ShipLogMode
         _firstDescInput.lineType = CustomInputField.LineType.MultiLineNewline;
         _firstDescBorderLine = _firstDescInput.transform.Find("EntryBorderLine").GetComponent<Image>();
         // TODO: Selection color alpha=1
+        // TODO: Increase caret width
         // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
         // TODO: Clear + GetNextItem on edit desc
 
@@ -130,26 +131,25 @@ public class JournalMode : ShipLogMode
                 if (ItemList.UpdateList() != 0)
                 {
                     UpdateDescriptionField();
-                    _creatingNewEntry = false; 
+                    _creatingNewEntry = false;
                     // Just in case it's moved just next frame after creation,
                     // we need to update the list after the creation
                     // (maybe CSLM should add UpdateListUI() without navigation?)
                 }
-            
-                if (!_creatingNewEntry && OWInput.IsNewlyPressed(InputLibrary.interact)) // TODO: Hold enter?
+
+                // Keyboard-required actions, all with enter
+                bool shiftPressed = OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR);
+                if (_creatingNewEntry || OWInput.IsPressed(InputLibrary.enter, 0.5f))
+                {
+                    RenameEntry();
+                }
+                else if (shiftPressed && OWInput.IsNewlyPressed(InputLibrary.enter))
                 {
                     CreateEntry();
                 }
-                else if (_creatingNewEntry || OWInput.IsNewlyPressed(InputLibrary.enter))
+                else if (OWInput.IsNewlyReleased(InputLibrary.enter)) // Released because the user may want to hold it...
                 {
-                    if (_creatingNewEntry || OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR))
-                    {
-                        RenameEntry();
-                    }
-                    else
-                    {
-                        EditDescription();
-                    }
+                    EditDescription();
                 }
                 break;
             case State.Renaming:
@@ -176,9 +176,9 @@ public class JournalMode : ShipLogMode
         int newIndex = entries.Count == 0 ? 0 : ItemList.GetSelectedIndex() + 1;
         JournalStore.Entry newEntry = new JournalStore.Entry();
         entries.Insert(newIndex, newEntry);
+        ItemList.SetSelectedIndex(newIndex);
         UpdateItems();
         UpdateDescriptionField();
-        ItemList.SetSelectedIndex(newIndex);
         _creatingNewEntry = true; // TODO: RenameEntry()? We need to update UI before...
     }
     
@@ -233,7 +233,7 @@ public class JournalMode : ShipLogMode
 
     private void EnableInputField(CustomInputField inputField)
     {
-        inputField.onFocusSelectAll = _creatingNewEntry;
+        inputField.onFocusSelectAll = _creatingNewEntry; // To quickly replace placeholder default text
         inputField.enabled = true;
         OWInput.ChangeInputMode(InputMode.KeyboardInput);
         Locator.GetPauseCommandListener().AddPauseCommandLock();
