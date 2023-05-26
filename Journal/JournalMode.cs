@@ -128,13 +128,26 @@ public class JournalMode : ShipLogMode
         switch (_currentState)
         {
             case State.Main:
+                int prevSelectedIndex = ItemList.GetSelectedIndex();
                 if (ItemList.UpdateList() != 0)
                 {
-                    UpdateDescriptionField();
-                    _creatingNewEntry = false;
                     // Just in case it's moved just next frame after creation,
                     // we need to update the list after the creation
                     // (maybe CSLM should add UpdateListUI() without navigation?)
+                    _creatingNewEntry = false;
+
+                    bool movingEntry = OWInput.IsPressed(InputLibrary.thrustUp);
+                    if (movingEntry)
+                    {
+                        int newSelectedIndex = ItemList.GetSelectedIndex();
+                        (Store.Data.Entries[prevSelectedIndex], Store.Data.Entries[newSelectedIndex]) =
+                            (Store.Data.Entries[newSelectedIndex], Store.Data.Entries[prevSelectedIndex]);
+                        UpdateItems();
+                        return; // Don't do any additional action when moving (also no need to change description)
+                        // TODO: A UpdateListUI() would be cool here to avoid ugly frame
+                    }
+
+                    UpdateDescriptionField();
                 }
 
                 // Keyboard-required actions, all with enter
