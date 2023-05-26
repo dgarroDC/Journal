@@ -25,6 +25,7 @@ public class JournalMode : ShipLogMode
 
     private readonly Color _selectionTextColor = new(0f, 0.2f, 0.3f);
     private readonly Color _editingTextColor = new(0.6f, 1f, 0.75f);
+    private readonly Color _deletingTextColor = Color.red;
     private Color _prevTextColor;
 
     public enum State
@@ -32,7 +33,8 @@ public class JournalMode : ShipLogMode
         Disabled,
         Main,
         Renaming,
-        EditingDescription
+        EditingDescription,
+        Deleting
     }
     
     public override void Initialize(ScreenPromptList centerPromptList, ScreenPromptList upperRightPromptList, OWAudioSource oneShotSource)
@@ -100,9 +102,10 @@ public class JournalMode : ShipLogMode
     
     private void UpdateDescriptionField()
     {
+        // Important to clear before the if, for example if the only entry was deleted
+        ItemList.DescriptionFieldClear();
         if (Store.Data.Entries.Count > 0)
         {
-            ItemList.DescriptionFieldClear();
             int selectedIndex = ItemList.GetSelectedIndex();
             JournalStore.Entry selectedEntry = Store.Data.Entries[selectedIndex];
             string description = selectedEntry.Description;
@@ -176,9 +179,13 @@ public class JournalMode : ShipLogMode
                     EditDescription();
                 }
                 
-                else if (OWInput.IsNewlyPressed(InputLibrary.interact))
+                else if (OWInput.IsNewlyPressed(InputLibrary.toolActionSecondary))
                 {
                     ToggleMoreToExplore();
+                }
+                else if (OWInput.IsNewlyReleased(InputLibrary.thrustDown))
+                {
+                    MarkForDeletion();
                 }
                 break;
             case State.Renaming:
@@ -191,6 +198,16 @@ public class JournalMode : ShipLogMode
                 if (OWInput.IsNewlyPressed(InputLibrary.escape))
                 {
                     EditDescriptionEnd();
+                }
+                break;
+            case State.Deleting:
+                if (OWInput.IsNewlyPressed(InputLibrary.cancel))
+                {
+                    UnmarkForDeletion();
+                }
+                else if (OWInput.IsPressed(InputLibrary.interact, 1f)) // enter would edit description next frame (because not Newly)
+                {
+                    DeleteEntry();
                 }
                 break;
             default:
@@ -232,6 +249,7 @@ public class JournalMode : ShipLogMode
         if (_creatingNewEntry)
         {
             // TODO: Consider this in the "confirm" prompt?
+            // TODO: Update UI? Alpha for some reason, rumor color too?
             EditDescription();
         }
         else
@@ -288,6 +306,38 @@ public class JournalMode : ShipLogMode
         Store.Data.Entries[selectedIndex].HasMoreToExplore = !Store.Data.Entries[selectedIndex].HasMoreToExplore;
         UpdateItems(); // No need to update the UI this frame
         UpdateDescriptionField(); // Remember that it has an item for more to explore
+    }
+    
+    private void MarkForDeletion()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        Text text = ItemList.GetItemsUI()[ItemList.GetIndexUI(selectedIndex)]._nameField;
+        _prevTextColor = text.color;
+        text.color = _deletingTextColor;
+        _currentState = State.Deleting;
+    }
+    
+    private void UnmarkForDeletion()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        Text text = ItemList.GetItemsUI()[ItemList.GetIndexUI(selectedIndex)]._nameField;
+        text.color = _prevTextColor;
+        _currentState = State.Main;
+    }
+
+    private void DeleteEntry()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        List<JournalStore.Entry> entries = Store.Data.Entries;
+        entries.RemoveAt(selectedIndex);
+        UnmarkForDeletion(); // Important to do before changing index to restore color!
+        if (selectedIndex >= entries.Count && entries.Count > 0)
+        {
+            // Same check as Épicas, idk if the -1 is bad but just in case...
+            ItemList.SetSelectedIndex(selectedIndex - 1);
+        }
+        UpdateItems(); // No need to update the UI this frame?
+        UpdateDescriptionField();
     }
 
     public override bool AllowModeSwap()
