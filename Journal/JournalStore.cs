@@ -28,7 +28,6 @@ public class JournalStore
             {
                 Entries = new List<Entry>() // I should probably use a default value or something
             };
-            SaveToDisk();
         }
     }
 

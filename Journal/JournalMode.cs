@@ -24,7 +24,7 @@ public class JournalMode : ShipLogMode
     private Image _firstDescBorderLine;
 
     private readonly Color _selectionTextColor = new(0f, 0.2f, 0.3f);
-    private readonly Color _editingTextColor = new(0.6f, 1f, 0.75f);
+    private readonly Color _editingTextColor = new(0.7f, 1f, 0.5f);
     private readonly Color _deletingTextColor = Color.red;
     private Color _prevTextColor;
 
@@ -166,13 +166,17 @@ public class JournalMode : ShipLogMode
 
                 // Keyboard-required actions, all with enter
                 bool shiftPressed = OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR);
+                if (shiftPressed && OWInput.IsNewlyPressed(InputLibrary.enter))
+                {
+                    CreateEntry();
+                }
+                if (Store.Data.Entries.Count == 0)
+                {
+                    return;
+                }
                 if (OWInput.IsPressed(InputLibrary.enter, 0.5f))
                 {
                     RenameEntry();
-                }
-                else if (shiftPressed && OWInput.IsNewlyPressed(InputLibrary.enter))
-                {
-                    CreateEntry();
                 }
                 else if (OWInput.IsNewlyReleased(InputLibrary.enter)) // Released because the user may want to hold it...
                 {
@@ -205,7 +209,7 @@ public class JournalMode : ShipLogMode
                 {
                     UnmarkForDeletion();
                 }
-                else if (OWInput.IsPressed(InputLibrary.interact, 1f)) // enter would edit description next frame (because not Newly)
+                else if (OWInput.IsPressed(InputLibrary.interact, 0.7f)) // enter would edit description next frame (because not Newly)
                 {
                     DeleteEntry();
                 }
@@ -246,6 +250,9 @@ public class JournalMode : ShipLogMode
         Store.Data.Entries[selectedIndex].Name = inputField.text;
         DisableInputField(inputField);
         UpdateItems();
+        // This is just for an alpha or something in UI index 4 (text should already be the correct one),
+        // noticeable for a frame or while editing description in entry
+        ItemList.UpdateListUI(); 
         if (_creatingNewEntry)
         {
             // TODO: Consider this in the "confirm" prompt?
@@ -304,8 +311,9 @@ public class JournalMode : ShipLogMode
     {
         int selectedIndex = ItemList.GetSelectedIndex();
         Store.Data.Entries[selectedIndex].HasMoreToExplore = !Store.Data.Entries[selectedIndex].HasMoreToExplore;
-        UpdateItems(); // No need to update the UI this frame
+        UpdateItems();
         UpdateDescriptionField(); // Remember that it has an item for more to explore
+        ItemList.UpdateListUI(); // To match the icon with the description already changed in this frame
     }
     
     private void MarkForDeletion()
@@ -313,6 +321,7 @@ public class JournalMode : ShipLogMode
         int selectedIndex = ItemList.GetSelectedIndex();
         Text text = ItemList.GetItemsUI()[ItemList.GetIndexUI(selectedIndex)]._nameField;
         _prevTextColor = text.color;
+        // Maybe I could use rich text in UpdateItems()? Like I would do for rumored I guess...
         text.color = _deletingTextColor;
         _currentState = State.Deleting;
     }
@@ -336,8 +345,9 @@ public class JournalMode : ShipLogMode
             // Same check as Épicas, idk if the -1 is bad but just in case...
             ItemList.SetSelectedIndex(selectedIndex - 1);
         }
-        UpdateItems(); // No need to update the UI this frame?
+        UpdateItems();
         UpdateDescriptionField();
+        ItemList.UpdateListUI(); // To match the selected entry with the description already changed in this frame
     }
 
     public override bool AllowModeSwap()
