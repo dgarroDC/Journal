@@ -16,6 +16,7 @@ public class JournalMode : ShipLogMode
  
     private State _currentState;
     private bool _creatingNewEntry;
+    private bool _pendingSave;
 
     private Image _photo;
     private Text _questionMark;
@@ -130,7 +131,11 @@ public class JournalMode : ShipLogMode
     {
         ItemList.Close();
         // TODO: Save more often?
-        Store.SaveToDisk();
+        if (_pendingSave)
+        {
+            Store.SaveToDisk();
+            _pendingSave = false;
+        }
 
         if (_currentState != State.Main)
         {
@@ -158,6 +163,7 @@ public class JournalMode : ShipLogMode
                             (Store.Data.Entries[newSelectedIndex], Store.Data.Entries[prevSelectedIndex]);
                         UpdateItems();
                         ItemList.UpdateListUI(); // Avoid ugly frame, show the updated list now
+                        _pendingSave = true;
                         return; // Don't do any additional action when moving (also no need to change description)
                     }
 
@@ -232,6 +238,7 @@ public class JournalMode : ShipLogMode
         ItemList.UpdateListUI(); // We want to update the UI but not move because of renaming
         _creatingNewEntry = true; // Only really necessary to remember to go to edit description next
         RenameEntry();
+        // No need to save file, it would be saved on description end
     }
     
     private void RenameEntry()
@@ -258,10 +265,12 @@ public class JournalMode : ShipLogMode
             // TODO: Consider this in the "confirm" prompt?
             // TODO: Update UI? Alpha for some reason, rumor color too?
             EditDescription();
+            // No need to save file, it would be saved on description end
         }
         else
         {
             _currentState = State.Main;
+            _pendingSave = true;
         }
     }
 
@@ -285,6 +294,7 @@ public class JournalMode : ShipLogMode
         UpdateDescriptionField();
         _currentState = State.Main;
         _creatingNewEntry = false;
+        _pendingSave = true;
     }
 
     private void EnableInputField(CustomInputField inputField)
@@ -314,6 +324,7 @@ public class JournalMode : ShipLogMode
         UpdateItems();
         UpdateDescriptionField(); // Remember that it has an item for more to explore
         ItemList.UpdateListUI(); // To match the icon with the description already changed in this frame
+        _pendingSave = true;
     }
     
     private void MarkForDeletion()
@@ -348,6 +359,7 @@ public class JournalMode : ShipLogMode
         UpdateItems();
         UpdateDescriptionField();
         ItemList.UpdateListUI(); // To match the selected entry with the description already changed in this frame
+        _pendingSave = true;
     }
 
     public override bool AllowModeSwap()

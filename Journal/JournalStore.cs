@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using OWML.Common;
 
 namespace Journal;
 
@@ -18,16 +20,32 @@ public class JournalStore
             Directory.CreateDirectory(savesPath);
         }
         _filePath = Path.Combine(savesDirectory, profileName + ".json");
-        // TODO: Backup save
         Data = Journal.Instance.ModHelper.Storage.Load<SaveData>(_filePath, false);
+        // Really messy all the used combinations...
+        string fullFilePath = Path.Combine(Journal.Instance.ModHelper.Manifest.ModFolderPath, _filePath);
         if (Data == default) 
         {
-            // TODO: DON'T DO THIS IF THE FILE EXISTED
+            if (File.Exists(fullFilePath))
+            {
+                Journal.Instance.ModHelper.Console.WriteLine(
+                    $"Save file {fullFilePath} found but with unexpected format, corrupted?\n" +
+                    "The file is now renamed (added .corrupted extension) in case you want to manually fix it, " +
+                    "the journal will start empty now", MessageType.Error);
+                string corruptedPath = fullFilePath + ".corrupted";
+                File.Delete(corruptedPath);
+                File.Move(fullFilePath, corruptedPath);
+            }
             // Create file with no entries
             Data = new SaveData
             {
                 Entries = new List<Entry>() // I should probably use a default value or something
             };
+            // No need to save empty file to disk...
+        }
+        else
+        {
+            // TODO: Only do this on save changes?
+            File.Copy(fullFilePath, fullFilePath + ".old", true);
         }
     }
 
