@@ -10,6 +10,7 @@ public class JournalStore
     public SaveData Data = new();
 
     private string _filePath;
+    private bool _backupOnNextSave;
 
     public JournalStore(string profileName)
     {
@@ -21,10 +22,9 @@ public class JournalStore
         }
         _filePath = Path.Combine(savesDirectory, profileName + ".json");
         Data = Journal.Instance.ModHelper.Storage.Load<SaveData>(_filePath, false);
-        // Really messy all the used combinations...
-        string fullFilePath = Path.Combine(Journal.Instance.ModHelper.Manifest.ModFolderPath, _filePath);
         if (Data == default) 
         {
+            string fullFilePath = GetFullFilePath();
             if (File.Exists(fullFilePath))
             {
                 Journal.Instance.ModHelper.Console.WriteLine(
@@ -44,13 +44,24 @@ public class JournalStore
         }
         else
         {
-            // TODO: Only do this on save changes?
-            File.Copy(fullFilePath, fullFilePath + ".old", true);
+            _backupOnNextSave = true;
         }
+    }
+
+    private string GetFullFilePath()
+    {
+        // Really messy all the used combinations...
+        return Path.Combine(Journal.Instance.ModHelper.Manifest.ModFolderPath, _filePath);
     }
 
     public void SaveToDisk()
     {
+        if (_backupOnNextSave)
+        {
+            string fullFilePath = GetFullFilePath();
+            File.Copy(fullFilePath, fullFilePath + ".old", true);
+            _backupOnNextSave = false;
+        }
         Journal.Instance.ModHelper.Storage.Save(Data, _filePath);
     }
 
