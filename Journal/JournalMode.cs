@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Journal.CustomShipLogModes;
+using Journal.External;
 using OWML.Common;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,6 +17,7 @@ public class JournalMode : ShipLogMode
     private State _currentState;
     private bool _creatingNewEntry;
     private bool _pendingSave;
+    private IEpicasAlbumAPI _epicasAlbumAPI;
 
     private Image _photo;
     private Text _questionMark;
@@ -35,13 +36,15 @@ public class JournalMode : ShipLogMode
         Main,
         Renaming,
         EditingDescription,
-        Deleting
+        Deleting,
+        ChoosingPhoto
     }
     
     public override void Initialize(ScreenPromptList centerPromptList, ScreenPromptList upperRightPromptList, OWAudioSource oneShotSource)
     {
         ItemList.SetName(Name);
         _photo = ItemList.GetPhoto();
+        _photo.preserveAspect = true; // Maybe this should be the default value...
         _questionMark = ItemList.GetQuestionMark();
 
         _entryInputs = new List<CustomInputField>();
@@ -60,6 +63,9 @@ public class JournalMode : ShipLogMode
         _firstDescBorderLine = _firstDescInput.transform.Find("EntryBorderLine").GetComponent<Image>();
         // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
 
+        _epicasAlbumAPI = Journal.Instance.ModHelper.Interaction
+            .TryGetModApi<IEpicasAlbumAPI>("dgarro.EpicasAlbum");
+        
         _currentState = State.Disabled;
     }
 
@@ -80,15 +86,22 @@ public class JournalMode : ShipLogMode
 
     public override void EnterMode(string entryID = "", List<ShipLogFact> revealQueue = null)
     {
-        ItemList.Open();
+        OpenList();
         UpdateItems();
         UpdateDescriptionField();
+        UpdatePhoto();
 
         if (_currentState != State.Disabled)
         {
             Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on enter!", MessageType.Error);
         }
         _currentState = State.Main;
+    }
+
+    private void OpenList()
+    {
+        // TODO: SOUND!
+        ItemList.Open();
     }
 
     private void UpdateItems()
@@ -127,9 +140,34 @@ public class JournalMode : ShipLogMode
         }
     }
 
+    private void UpdatePhoto()
+    {
+        if (Store.Data.Entries.Count > 0)
+        {
+            int selectedIndex = ItemList.GetSelectedIndex();
+            JournalStore.Entry selectedEntry = Store.Data.Entries[selectedIndex];
+            if (selectedEntry.EpicasAlbumSnapshotName != null)
+            {
+                _questionMark.gameObject.SetActive(false);
+                _photo.gameObject.SetActive(true);
+                _photo.sprite = _epicasAlbumAPI.GetSnapshotSprite(selectedEntry.EpicasAlbumSnapshotName);
+            }
+            else
+            {
+                _questionMark.gameObject.SetActive(true);
+                _photo.gameObject.SetActive(false);
+            }
+        }
+        else
+        {
+            _questionMark.gameObject.SetActive(false);
+            _photo.gameObject.SetActive(false);
+        }
+    }
+
     public override void ExitMode()
     {
-        ItemList.Close();
+        CloseList();
         // TODO: Save more often?
         if (_pendingSave)
         {
@@ -144,9 +182,14 @@ public class JournalMode : ShipLogMode
         _currentState = State.Disabled;
     }
 
+    private void CloseList()
+    {
+        // I guess nothing else?
+        ItemList.Close();
+    }
+
     public override void UpdateMode()
     {
-        // TODO: Add Store.Data.Entries.Count > 0 check on most actions..
         // TODO: What happens if desc field is scrolled while editing???
 
         switch (_currentState)
@@ -164,10 +207,11 @@ public class JournalMode : ShipLogMode
                         UpdateItems();
                         ItemList.UpdateListUI(); // Avoid ugly frame, show the updated list now
                         _pendingSave = true;
-                        return; // Don't do any additional action when moving (also no need to change description)
+                        return; // Don't do any additional action when moving (also no need to change description or photo)
                     }
 
                     UpdateDescriptionField();
+                    UpdatePhoto();
                 }
 
                 // Keyboard-required actions, all with enter
@@ -192,6 +236,10 @@ public class JournalMode : ShipLogMode
                 else if (OWInput.IsNewlyPressed(InputLibrary.toolActionSecondary))
                 {
                     ToggleMoreToExplore();
+                }
+                else if (OWInput.IsNewlyPressed(InputLibrary.toolActionPrimary))
+                {
+                    ChoosePhoto();
                 }
                 else if (OWInput.IsNewlyReleased(InputLibrary.thrustDown))
                 {
@@ -220,6 +268,9 @@ public class JournalMode : ShipLogMode
                     DeleteEntry();
                 }
                 break;
+            case State.ChoosingPhoto:
+                // Do nothing, we aren't actually active right now (should we change mode?)
+                break;
             default:
                 Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on update!", MessageType.Error);
                 break;
@@ -235,6 +286,7 @@ public class JournalMode : ShipLogMode
         ItemList.SetSelectedIndex(newIndex);
         UpdateItems();
         UpdateDescriptionField();
+        UpdatePhoto();
         ItemList.UpdateListUI(); // We want to update the UI but not move because of renaming
         _creatingNewEntry = true; // Only really necessary to remember to go to edit description next
         RenameEntry();
@@ -326,7 +378,33 @@ public class JournalMode : ShipLogMode
         ItemList.UpdateListUI(); // To match the icon with the description already changed in this frame
         _pendingSave = true;
     }
-    
+
+    private void ChoosePhoto()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        JournalStore.Entry selectedEntry = Store.Data.Entries[selectedIndex];
+        _epicasAlbumAPI.OpenSnapshotChooserDialog(selectedEntry.EpicasAlbumSnapshotName, ChoosePhotoEnd);
+        _currentState = State.ChoosingPhoto;
+        CloseList();
+    }
+
+    private void ChoosePhotoEnd(string selectedSnapshotName)
+    {
+        if (selectedSnapshotName != null)
+        {
+            int selectedIndex = ItemList.GetSelectedIndex();
+            Store.Data.Entries[selectedIndex].EpicasAlbumSnapshotName = selectedSnapshotName;
+            UpdatePhoto();
+            _pendingSave = true;
+        }
+        // Wait a frame to avoid closing the mode on UpdateMode() if run after this on same frame
+        Journal.Instance.ModHelper.Events.Unity.FireOnNextUpdate(() =>
+        {
+            _currentState = State.Main;
+            OpenList();
+        });
+    }
+
     private void MarkForDeletion()
     {
         int selectedIndex = ItemList.GetSelectedIndex();
@@ -358,6 +436,7 @@ public class JournalMode : ShipLogMode
         }
         UpdateItems();
         UpdateDescriptionField();
+        UpdatePhoto();
         ItemList.UpdateListUI(); // To match the selected entry with the description already changed in this frame
         _pendingSave = true;
     }

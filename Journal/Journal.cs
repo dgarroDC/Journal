@@ -1,4 +1,4 @@
-﻿using Journal.CustomShipLogModes;
+﻿using Journal.External;
 using OWML.ModHelper;
 using UnityEngine;
 
@@ -53,7 +53,8 @@ public class Journal : ModBehaviour
     {
         if (!_setupDone) return;
 
-        // Hack to get updates on other input mode... 
+        // Hack to get updates on other input mode...
+        // TODO: Better way...
         if (_journalMode.UsingInput())
         {
             _journalMode.UpdateMode();

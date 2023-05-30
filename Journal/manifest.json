@@ -6,6 +6,6 @@
   "uniqueName": "dgarro.Journal",
   "version": "1.0.0",
   "owmlVersion": "2.9.0",
-  "dependencies": [ "dgarro.CustomShipLogModes" ],
+  "dependencies": [ "dgarro.CustomShipLogModes", "dgarro.EpicasAlbum" ],
   "pathsToPreserve": [ "saves" ]
 }
