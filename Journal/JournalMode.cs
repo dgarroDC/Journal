@@ -13,7 +13,12 @@ public class JournalMode : ShipLogMode
 
     public ItemListWrapper ItemList;
     public JournalStore Store;
- 
+    
+    private OWAudioSource _oneShotSource;
+    private readonly AudioType _openSound = AudioType.DialogueEnter;
+    private readonly AudioType _positiveSound = AudioType.DialogueAdvance;
+    private readonly AudioType _negativeSound = AudioType.DialogueExit;
+
     private State _currentState;
     private bool _creatingNewEntry;
     private bool _pendingSave;
@@ -42,6 +47,8 @@ public class JournalMode : ShipLogMode
     
     public override void Initialize(ScreenPromptList centerPromptList, ScreenPromptList upperRightPromptList, OWAudioSource oneShotSource)
     {
+        _oneShotSource = oneShotSource;
+
         ItemList.SetName(Name);
         _photo = ItemList.GetPhoto();
         _photo.preserveAspect = true; // Maybe this should be the default value...
@@ -76,6 +83,7 @@ public class JournalMode : ShipLogMode
         input.caretWidth = 2; // Otherwise it's too thin
         input.selectionColor = _selectionTextColor; // Important alpha=1 for overlap in description field
         input.enabled = false;
+        // input.onValueChanged.AddListener(_ => _oneShotSource.PlayOneShot(_positiveSound)); // Lower volume (NOT WORKING WHEN A LOT) 
         return input;
     }
 
@@ -100,7 +108,7 @@ public class JournalMode : ShipLogMode
 
     private void OpenList()
     {
-        // TODO: SOUND!
+        _oneShotSource.PlayOneShot(_openSound, 3f); // Or TH_ProjectorActivate?
         ItemList.Open();
     }
 
@@ -196,7 +204,8 @@ public class JournalMode : ShipLogMode
         {
             case State.Main:
                 int prevSelectedIndex = ItemList.GetSelectedIndex();
-                if (ItemList.UpdateList() != 0)
+                int delta = ItemList.UpdateList();
+                if (delta != 0)
                 {
                     bool movingEntry = OWInput.IsPressed(InputLibrary.thrustUp);
                     if (movingEntry)
@@ -207,6 +216,7 @@ public class JournalMode : ShipLogMode
                         UpdateItems();
                         ItemList.UpdateListUI(); // Avoid ugly frame, show the updated list now
                         _pendingSave = true;
+                        _oneShotSource.PlayOneShot(delta > 0 ? _positiveSound : _negativeSound, 3f);
                         return; // Don't do any additional action when moving (also no need to change description or photo)
                     }
 
@@ -300,6 +310,7 @@ public class JournalMode : ShipLogMode
         inputField.text = Store.Data.Entries[selectedIndex].Name;
         EnableInputField(inputField);
         _currentState = State.Renaming;
+        _oneShotSource.PlayOneShot(_positiveSound, 3f);
     }
 
     private void RenameEntryEnd()
@@ -323,6 +334,7 @@ public class JournalMode : ShipLogMode
         {
             _currentState = State.Main;
             _pendingSave = true;
+            _oneShotSource.PlayOneShot(_negativeSound, 3f);
         }
     }
 
@@ -335,6 +347,7 @@ public class JournalMode : ShipLogMode
         EnableInputField(_firstDescInput);
         _firstDescBorderLine.enabled = false;
         _currentState = State.EditingDescription;
+        _oneShotSource.PlayOneShot(_positiveSound, 3f);
     }
 
     private void EditDescriptionEnd()
@@ -347,6 +360,7 @@ public class JournalMode : ShipLogMode
         _currentState = State.Main;
         _creatingNewEntry = false;
         _pendingSave = true;
+        _oneShotSource.PlayOneShot(_negativeSound, 3f);
     }
 
     private void EnableInputField(CustomInputField inputField)
@@ -377,6 +391,7 @@ public class JournalMode : ShipLogMode
         UpdateDescriptionField(); // Remember that it has an item for more to explore
         ItemList.UpdateListUI(); // To match the icon with the description already changed in this frame
         _pendingSave = true;
+        _oneShotSource.PlayOneShot(Store.Data.Entries[selectedIndex].HasMoreToExplore ? _positiveSound : _negativeSound, 3f);
     }
 
     private void ChoosePhoto()
@@ -413,6 +428,7 @@ public class JournalMode : ShipLogMode
         // Maybe I could use rich text in UpdateItems()? Like I would do for rumored I guess...
         text.color = _deletingTextColor;
         _currentState = State.Deleting;
+        _oneShotSource.PlayOneShot(_positiveSound, 3f);
     }
     
     private void UnmarkForDeletion()
@@ -421,6 +437,7 @@ public class JournalMode : ShipLogMode
         Text text = ItemList.GetItemsUI()[ItemList.GetIndexUI(selectedIndex)]._nameField;
         text.color = _prevTextColor;
         _currentState = State.Main;
+        _oneShotSource.PlayOneShot(_negativeSound, 3f);
     }
 
     private void DeleteEntry()
