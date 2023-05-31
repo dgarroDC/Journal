@@ -243,7 +243,7 @@ public class JournalMode : ShipLogMode
                     EditDescription();
                 }
                 
-                else if (OWInput.IsNewlyPressed(InputLibrary.toolActionSecondary))
+                else if (OWInput.IsNewlyPressed(InputLibrary.thrustDown))
                 {
                     ToggleMoreToExplore();
                 }
@@ -251,7 +251,7 @@ public class JournalMode : ShipLogMode
                 {
                     ChoosePhoto();
                 }
-                else if (OWInput.IsNewlyReleased(InputLibrary.thrustDown))
+                else if (OWInput.IsNewlyPressed(InputLibrary.toolActionSecondary)) // Like Épicas
                 {
                     MarkForDeletion();
                 }
