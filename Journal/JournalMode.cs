@@ -35,6 +35,17 @@ public class JournalMode : ShipLogMode
     private readonly Color _deletingTextColor = Color.red;
     private Color _prevTextColor;
 
+    private ScreenPromptList _centerPromptList;
+    private ScreenPrompt _createEntryPrompt;
+    private ScreenPrompt _renameEntryPrompt;
+    private ScreenPrompt _editDescriptionPrompt;
+    private ScreenPrompt _setPhotoPrompt;
+    private ScreenPrompt _removePhotoPrompt;
+    private ScreenPrompt _toggleMoreToExplorePrompt;
+    private ScreenPrompt _moveEntryUpPrompt;
+    private ScreenPrompt _moveEntryDownPrompt;
+    private ScreenPrompt _deleteEntryPrompt;
+
     public enum State
     {
         Disabled,
@@ -48,6 +59,7 @@ public class JournalMode : ShipLogMode
     public override void Initialize(ScreenPromptList centerPromptList, ScreenPromptList upperRightPromptList, OWAudioSource oneShotSource)
     {
         _oneShotSource = oneShotSource;
+        _centerPromptList = centerPromptList;
 
         ItemList.SetName(Name);
         _photo = ItemList.GetPhoto();
@@ -73,6 +85,22 @@ public class JournalMode : ShipLogMode
         _epicasAlbumAPI = Journal.Instance.ModHelper.Interaction
             .TryGetModApi<IEpicasAlbumAPI>("dgarro.EpicasAlbum");
         
+        // TODO: Translate
+        // Not using the ScreenPrompt.MultiCommandType.HOLD_ONE_AND_PRESS_2ND, too much space...
+        string holdPrompt = UITextLibrary.GetString(UITextType.HoldPrompt);
+        _createEntryPrompt = new ScreenPrompt(InputLibrary.shiftL, InputLibrary.enter,
+            $"Create Entry <CMD1>{holdPrompt} +<CMD2>", ScreenPrompt.MultiCommandType.CUSTOM_BOTH);
+        _renameEntryPrompt = new ScreenPrompt(InputLibrary.enter, $"Rename Entry <CMD>{holdPrompt}");
+        _editDescriptionPrompt = new ScreenPrompt(InputLibrary.enter, "Edit Description");
+        _setPhotoPrompt = new ScreenPrompt(InputLibrary.toolActionPrimary, "Change Photo"); // TODO: Or Add
+        _removePhotoPrompt = new ScreenPrompt(InputLibrary.toolActionPrimary, $"Remove Photo <CMD>{holdPrompt}");
+        _toggleMoreToExplorePrompt = new ScreenPrompt(InputLibrary.thrustDown, "Remove More to Explore"); // TODO: Or Ad
+        _moveEntryUpPrompt = new ScreenPrompt(InputLibrary.thrustUp, InputLibrary.up,
+            $"Move Entry Up <CMD1>{holdPrompt} +<CMD2>", ScreenPrompt.MultiCommandType.CUSTOM_BOTH);
+        _moveEntryDownPrompt = new ScreenPrompt(InputLibrary.thrustUp, InputLibrary.down,
+            $"Move Entry Down <CMD1>{holdPrompt} +<CMD2>", ScreenPrompt.MultiCommandType.CUSTOM_BOTH);
+        _deleteEntryPrompt = new ScreenPrompt(InputLibrary.toolActionSecondary, "Delete Entry");
+
         _currentState = State.Disabled;
     }
 
@@ -110,6 +138,17 @@ public class JournalMode : ShipLogMode
     {
         _oneShotSource.PlayOneShot(_openSound, 3f); // Or TH_ProjectorActivate?
         ItemList.Open();
+
+        PromptManager promptManager = Locator.GetPromptManager();
+        promptManager.AddScreenPrompt(_createEntryPrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_renameEntryPrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_editDescriptionPrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_setPhotoPrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_removePhotoPrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_toggleMoreToExplorePrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_moveEntryUpPrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_moveEntryDownPrompt, _centerPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_deleteEntryPrompt, _centerPromptList, TextAnchor.MiddleRight);
     }
 
     private void UpdateItems()
@@ -192,13 +231,33 @@ public class JournalMode : ShipLogMode
 
     private void CloseList()
     {
-        // I guess nothing else?
         ItemList.Close();
+
+        PromptManager promptManager = Locator.GetPromptManager();
+        promptManager.RemoveScreenPrompt(_createEntryPrompt);        
+        promptManager.RemoveScreenPrompt(_renameEntryPrompt);
+        promptManager.RemoveScreenPrompt(_editDescriptionPrompt);
+        promptManager.RemoveScreenPrompt(_setPhotoPrompt);        
+        promptManager.RemoveScreenPrompt(_removePhotoPrompt);
+        promptManager.RemoveScreenPrompt(_toggleMoreToExplorePrompt);
+        promptManager.RemoveScreenPrompt(_moveEntryUpPrompt);
+        promptManager.RemoveScreenPrompt(_moveEntryDownPrompt);
+        promptManager.RemoveScreenPrompt(_deleteEntryPrompt);
     }
 
     public override void UpdateMode()
     {
         // TODO: What happens if desc field is scrolled while editing???
+
+        _createEntryPrompt.SetVisibility(true);
+        _renameEntryPrompt.SetVisibility(true);
+        _editDescriptionPrompt.SetVisibility(true);        
+        _setPhotoPrompt.SetVisibility(true);
+        _removePhotoPrompt.SetVisibility(true);
+        _toggleMoreToExplorePrompt.SetVisibility(true);
+        _moveEntryUpPrompt.SetVisibility(true);
+        _moveEntryDownPrompt.SetVisibility(true);
+        _deleteEntryPrompt.SetVisibility(true);
 
         switch (_currentState)
         {
