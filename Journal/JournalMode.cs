@@ -244,15 +244,26 @@ public class JournalMode : ShipLogMode
     private void UpdateItems()
     {
         List<Tuple<string,bool,bool,bool>> items = new();
-        string rumorColor = "#" + ColorUtility.ToHtmlStringRGBA(Locator.GetUIStyleManager().GetShipLogRumorColor());
-        foreach (JournalStore.Entry entry in Store.Data.Entries)
+        string rumorColor = ColorUtility.ToHtmlStringRGBA(Locator.GetUIStyleManager().GetShipLogRumorColor());
+        string deletingColor = ColorUtility.ToHtmlStringRGBA(_deletingTextColor);
+        for (var i = 0; i < Store.Data.Entries.Count; i++)
         {
+            JournalStore.Entry entry = Store.Data.Entries[i];
             string name = entry.Name;
-            if (entry.EpicasAlbumSnapshotName == null)
+            string color = null;
+            if (_currentState == State.Deleting && ItemList.GetSelectedIndex() == i)
+            {
+                color = deletingColor;
+            }
+            else if (entry.EpicasAlbumSnapshotName == null)
             {
                 // ShipLogEntryListItem.UpdateNameField() does it with the font color, but I would have to refresh all items
                 // each time the UI is updated, so rich text is way easier....
-                name = $"<color={rumorColor}>{name}</color>";
+                color = rumorColor;
+            }
+            if (color != null)
+            {
+                name = $"<color=#{color}>{name}</color>";
             }
             items.Add(new Tuple<string, bool, bool, bool>(name, false, false, entry.HasMoreToExplore));
         }
@@ -640,21 +651,19 @@ public class JournalMode : ShipLogMode
 
     private void MarkForDeletion()
     {
-        int selectedIndex = ItemList.GetSelectedIndex();
-        Text text = ItemList.GetItemsUI()[ItemList.GetIndexUI(selectedIndex)]._nameField;
-        _prevTextColor = text.color;
-        // Maybe I could use rich text in UpdateItems()? Like I would do for rumored I guess...
-        text.color = _deletingTextColor;
         _currentState = State.Deleting;
+        // To add the deleting color we need to update items and UI, need to do after changing state
+        // (we can't change the color of the text component because the rumor orange in rich text would override it!)
+        UpdateItems();
+        ItemList.UpdateListUI();
         _oneShotSource.PlayOneShot(_positiveSound, 3f);
     }
     
     private void UnmarkForDeletion()
     {
-        int selectedIndex = ItemList.GetSelectedIndex();
-        Text text = ItemList.GetItemsUI()[ItemList.GetIndexUI(selectedIndex)]._nameField;
-        text.color = _prevTextColor;
         _currentState = State.Main;
+        UpdateItems();
+        ItemList.UpdateListUI();
         _oneShotSource.PlayOneShot(_negativeSound, 3f);
     }
 
@@ -663,17 +672,18 @@ public class JournalMode : ShipLogMode
         int selectedIndex = ItemList.GetSelectedIndex();
         List<JournalStore.Entry> entries = Store.Data.Entries;
         entries.RemoveAt(selectedIndex);
-        UnmarkForDeletion(); // Important to do before changing index to restore color!
         if (selectedIndex >= entries.Count && entries.Count > 0)
         {
             // Same check as Épicas, idk if the -1 is bad but just in case...
             ItemList.SetSelectedIndex(selectedIndex - 1);
         }
+        _currentState = State.Main; // Again, important to do before updating items, otherwise another item would be marked!
         UpdateItems();
         UpdateDescriptionField();
         UpdatePhoto();
         ItemList.UpdateListUI(); // To match the selected entry with the description already changed in this frame
         _pendingSave = true;
+        _oneShotSource.PlayOneShot(_negativeSound, 3f);
     }
 
     private void TogglePrompts()
