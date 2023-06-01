@@ -244,9 +244,17 @@ public class JournalMode : ShipLogMode
     private void UpdateItems()
     {
         List<Tuple<string,bool,bool,bool>> items = new();
+        string rumorColor = "#" + ColorUtility.ToHtmlStringRGBA(Locator.GetUIStyleManager().GetShipLogRumorColor());
         foreach (JournalStore.Entry entry in Store.Data.Entries)
         {
-            items.Add(new Tuple<string, bool, bool, bool>(entry.Name, false, false, entry.HasMoreToExplore));
+            string name = entry.Name;
+            if (entry.EpicasAlbumSnapshotName == null)
+            {
+                // ShipLogEntryListItem.UpdateNameField() does it with the font color, but I would have to refresh all items
+                // each time the UI is updated, so rich text is way easier....
+                name = $"<color={rumorColor}>{name}</color>";
+            }
+            items.Add(new Tuple<string, bool, bool, bool>(name, false, false, entry.HasMoreToExplore));
         }
         ItemList.SetItems(items);
     }
@@ -602,6 +610,8 @@ public class JournalMode : ShipLogMode
             int selectedIndex = ItemList.GetSelectedIndex();
             Store.Data.Entries[selectedIndex].EpicasAlbumSnapshotName = selectedSnapshotName;
             UpdatePhoto();
+            UpdateItems();
+            ItemList.UpdateListUI(); // To remove rumor color if it had it
             _pendingSave = true;
         }
         // Wait a frame to avoid closing the mode on UpdateMode() if run after this on same frame
@@ -620,6 +630,8 @@ public class JournalMode : ShipLogMode
         {
             selectedEntry.EpicasAlbumSnapshotName = null;
             UpdatePhoto();
+            UpdateItems();
+            ItemList.UpdateListUI(); // For the rumor color
             _pendingSave = true;
             _oneShotSource.PlayOneShot(_negativeSound, 3f);
             _dontChoosePhotoOnNextRelease = true;
