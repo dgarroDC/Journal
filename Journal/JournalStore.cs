@@ -36,10 +36,7 @@ public class JournalStore
                 File.Move(fullFilePath, corruptedPath);
             }
             // Create file with no entries
-            Data = new SaveData
-            {
-                Entries = new List<Entry>() // I should probably use a default value or something
-            };
+            Data = new SaveData();
             // No need to save empty file to disk...
         }
         else
@@ -67,7 +64,14 @@ public class JournalStore
 
     public class SaveData
     {
+        public bool ShowPrompts;
         public List<Entry> Entries;
+
+        public SaveData()
+        {
+            ShowPrompts = true;
+            Entries = new List<Entry>();
+        }
     }
     
     public class Entry
