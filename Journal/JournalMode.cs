@@ -35,21 +35,28 @@ public class JournalMode : ShipLogMode
     private readonly Color _deletingTextColor = Color.red;
     private Color _prevTextColor;
 
-    // TODO: Kbm (like desc field), gamepad with only text
     private ScreenPromptList _upperRightPromptList;
     private ScreenPromptList _mainPromptList;
     private CanvasGroupAnimator _mainPromptListAnimator;
     private readonly Vector3 _mainPromptListShownScale = Vector3.one * 1.5f; // Other prompts are with this scale (in root)...
     private readonly Vector3 _mainPromptListHiddenScale = new Vector3(0f, 1f, 1f) * 1.5f;
-    private ScreenPrompt _createEntryPrompt;
-    private ScreenPrompt _renameEntryPrompt;
-    private ScreenPrompt _editDescriptionPrompt;
+    private bool _usingGamepad;
+    private ScreenPrompt _createEntryPromptKbm;
+    private ScreenPrompt _createEntryPromptGamepad;
+    private ScreenPrompt _renameEntryPromptKbm;
+    private ScreenPrompt _renameEntryPromptGamepad;
+    private ScreenPrompt _editDescriptionPromptKbm;
+    private ScreenPrompt _editDescriptionPromptGamepad;
     private ScreenPrompt _setPhotoPrompt;
     private ScreenPrompt _removePhotoPrompt;
     private ScreenPrompt _toggleMoreToExplorePrompt;
     private ScreenPrompt _moveEntryPrompt;
     private ScreenPrompt _deleteEntryPrompt;
     private ScreenPrompt _togglePromptsPrompt;
+    private ScreenPrompt _confirmInputPromptKbm;
+    private ScreenPrompt _confirmInputPromptGamepad;
+    private ScreenPrompt _confirmDeletePrompt;
+    private ScreenPrompt _cancelDeletePrompt;
 
     public enum State
     {
@@ -99,19 +106,28 @@ public class JournalMode : ShipLogMode
     {
         // TODO: Translate
         // Not using the ScreenPrompt.MultiCommandType.HOLD_ONE_AND_PRESS_2ND, too much space...
+        // Some are created with empty string because their texts are set in UpdatePrompts()
         string holdPrompt = UITextLibrary.GetString(UITextType.HoldPrompt);
-        _createEntryPrompt = new ScreenPrompt(InputLibrary.shiftL, InputLibrary.enter,
+        string keyboardRequiredPrompt = "<color=red>(Keyboard required)</color>";
+        _createEntryPromptKbm = new ScreenPrompt(InputLibrary.shiftL, InputLibrary.enter,
             $"Create Entry <CMD1>{holdPrompt} +<CMD2>", ScreenPrompt.MultiCommandType.CUSTOM_BOTH);
-        _renameEntryPrompt = new ScreenPrompt(InputLibrary.enter, $"Rename Entry <CMD>{holdPrompt}");
-        _editDescriptionPrompt = new ScreenPrompt(InputLibrary.enter, "Edit Description");
-        _setPhotoPrompt = new ScreenPrompt(InputLibrary.toolActionPrimary, "Change Photo"); // TODO: Or Add
+        _createEntryPromptGamepad = new ScreenPrompt($"Create Entry {keyboardRequiredPrompt}");
+        _renameEntryPromptKbm = new ScreenPrompt(InputLibrary.enter, $"Rename Entry <CMD>{holdPrompt}");
+        _renameEntryPromptGamepad = new ScreenPrompt($"Rename Entry {keyboardRequiredPrompt}");
+        _editDescriptionPromptKbm = new ScreenPrompt(InputLibrary.enter, "Edit Description");
+        _editDescriptionPromptGamepad = new ScreenPrompt($"Edit Description {keyboardRequiredPrompt}");
+        _setPhotoPrompt = new ScreenPrompt(InputLibrary.toolActionPrimary, "");
         _removePhotoPrompt = new ScreenPrompt(InputLibrary.toolActionPrimary, $"Remove Photo <CMD>{holdPrompt}");
-        _toggleMoreToExplorePrompt = new ScreenPrompt(InputLibrary.thrustDown, "Remove More to Explore"); // TODO: Or Add
+        _toggleMoreToExplorePrompt = new ScreenPrompt(InputLibrary.thrustDown, "");
         _moveEntryPrompt = new ScreenPrompt(InputLibrary.thrustUp, $"Move Entry <CMD>{holdPrompt}");
         _deleteEntryPrompt = new ScreenPrompt(InputLibrary.toolActionSecondary, "Delete Entry");
         
-        _togglePromptsPrompt = new ScreenPrompt(InputLibrary.map, "Show Prompts"); // TODO: Or Hide
-        
+        _togglePromptsPrompt = new ScreenPrompt(InputLibrary.map, "");
+        _confirmInputPromptKbm = new ScreenPrompt(InputLibrary.escape, "Confirm Text");
+        _confirmInputPromptGamepad = new ScreenPrompt(InputLibrary.escape, $"Confirm Text {keyboardRequiredPrompt}");
+        _confirmDeletePrompt = new ScreenPrompt(InputLibrary.interact, $"Confirm Delete {holdPrompt}");
+        _cancelDeletePrompt = new ScreenPrompt(InputLibrary.cancel, $"Cancel Delete");
+
         GameObject promptListGo = new GameObject("PromptList", 
             typeof(VerticalLayoutGroup), typeof(ScreenPromptList), typeof(CanvasGroupAnimator));
         RectTransform promptListRect = promptListGo.GetComponent<RectTransform>();
@@ -166,18 +182,62 @@ public class JournalMode : ShipLogMode
     {
         _oneShotSource.PlayOneShot(_openSound, 3f); // Or TH_ProjectorActivate?
         ItemList.Open();
+        AddPrompts();
+    }
 
+    private void AddPrompts()
+    {
         PromptManager promptManager = Locator.GetPromptManager();
-        promptManager.AddScreenPrompt(_createEntryPrompt, _mainPromptList, TextAnchor.MiddleRight);
-        promptManager.AddScreenPrompt(_renameEntryPrompt, _mainPromptList, TextAnchor.MiddleRight);
-        promptManager.AddScreenPrompt(_editDescriptionPrompt, _mainPromptList, TextAnchor.MiddleRight);
+        _usingGamepad = OWInput.UsingGamepad();
+        if (!_usingGamepad)
+        {
+            // Important because things could break or something...
+            promptManager.AddScreenPrompt(_createEntryPromptKbm, _mainPromptList, TextAnchor.MiddleRight);
+            promptManager.AddScreenPrompt(_renameEntryPromptKbm, _mainPromptList, TextAnchor.MiddleRight);
+            promptManager.AddScreenPrompt(_editDescriptionPromptKbm, _mainPromptList, TextAnchor.MiddleRight);
+            
+            promptManager.AddScreenPrompt(_confirmInputPromptKbm, _upperRightPromptList, TextAnchor.MiddleRight);
+        }
+        else
+        {
+            promptManager.AddScreenPrompt(_createEntryPromptGamepad, _mainPromptList, TextAnchor.MiddleRight);
+            promptManager.AddScreenPrompt(_renameEntryPromptGamepad, _mainPromptList, TextAnchor.MiddleRight);
+            promptManager.AddScreenPrompt(_editDescriptionPromptGamepad, _mainPromptList, TextAnchor.MiddleRight);
+            
+            promptManager.AddScreenPrompt(_confirmInputPromptGamepad, _upperRightPromptList, TextAnchor.MiddleRight);
+        }
+
         promptManager.AddScreenPrompt(_setPhotoPrompt, _mainPromptList, TextAnchor.MiddleRight);
         promptManager.AddScreenPrompt(_removePhotoPrompt, _mainPromptList, TextAnchor.MiddleRight);
         promptManager.AddScreenPrompt(_toggleMoreToExplorePrompt, _mainPromptList, TextAnchor.MiddleRight);
         promptManager.AddScreenPrompt(_moveEntryPrompt, _mainPromptList, TextAnchor.MiddleRight);
         promptManager.AddScreenPrompt(_deleteEntryPrompt, _mainPromptList, TextAnchor.MiddleRight);
-        
+
         promptManager.AddScreenPrompt(_togglePromptsPrompt, _upperRightPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_cancelDeletePrompt, _upperRightPromptList, TextAnchor.MiddleRight);
+        promptManager.AddScreenPrompt(_confirmDeletePrompt, _upperRightPromptList, TextAnchor.MiddleRight); // We want this on left
+    }
+
+    private void RemovePrompts()
+    {
+        PromptManager promptManager = Locator.GetPromptManager();
+        promptManager.RemoveScreenPrompt(_createEntryPromptKbm);
+        promptManager.RemoveScreenPrompt(_createEntryPromptGamepad);
+        promptManager.RemoveScreenPrompt(_renameEntryPromptKbm);
+        promptManager.RemoveScreenPrompt(_renameEntryPromptGamepad);
+        promptManager.RemoveScreenPrompt(_editDescriptionPromptKbm);
+        promptManager.RemoveScreenPrompt(_editDescriptionPromptGamepad);
+        promptManager.RemoveScreenPrompt(_setPhotoPrompt);
+        promptManager.RemoveScreenPrompt(_removePhotoPrompt);
+        promptManager.RemoveScreenPrompt(_toggleMoreToExplorePrompt);
+        promptManager.RemoveScreenPrompt(_moveEntryPrompt);
+        promptManager.RemoveScreenPrompt(_deleteEntryPrompt);
+
+        promptManager.RemoveScreenPrompt(_togglePromptsPrompt);
+        promptManager.RemoveScreenPrompt(_confirmInputPromptKbm);
+        promptManager.RemoveScreenPrompt(_confirmInputPromptGamepad);
+        promptManager.RemoveScreenPrompt(_confirmDeletePrompt);
+        promptManager.RemoveScreenPrompt(_cancelDeletePrompt);
     }
 
     private void UpdateItems()
@@ -261,45 +321,13 @@ public class JournalMode : ShipLogMode
     private void CloseList()
     {
         ItemList.Close();
-
-        PromptManager promptManager = Locator.GetPromptManager();
-        promptManager.RemoveScreenPrompt(_createEntryPrompt);        
-        promptManager.RemoveScreenPrompt(_renameEntryPrompt);
-        promptManager.RemoveScreenPrompt(_editDescriptionPrompt);
-        promptManager.RemoveScreenPrompt(_setPhotoPrompt);
-        promptManager.RemoveScreenPrompt(_removePhotoPrompt);
-        promptManager.RemoveScreenPrompt(_toggleMoreToExplorePrompt);
-        promptManager.RemoveScreenPrompt(_moveEntryPrompt);
-        promptManager.RemoveScreenPrompt(_deleteEntryPrompt);
-        
-        promptManager.RemoveScreenPrompt(_togglePromptsPrompt);
+        RemovePrompts();
     }
 
     public override void UpdateMode()
     {
         // TODO: What happens if desc field is scrolled while editing???
-
-        _createEntryPrompt.SetVisibility(true);
-        // if (OWInput.UsingGamepad())
-        // {
-        //     _createEntryPrompt._multiCommandType = ScreenPrompt.MultiCommandType.CUSTOM_BOTH;
-        //     _createEntryPrompt.SetText("<CMD1> <CMD2> Requires Keyboard");
-        // }
-        // else
-        // {
-        //     _createEntryPrompt._multiCommandType = ScreenPrompt.MultiCommandType.CUSTOM_BOTH;
-        //     _createEntryPrompt.SetText("Create Entry <CMD1>{holdPrompt} +<CMD2>");
-        // }
-
-        _renameEntryPrompt.SetVisibility(true);
-        _editDescriptionPrompt.SetVisibility(true);        
-        _setPhotoPrompt.SetVisibility(true);
-        _removePhotoPrompt.SetVisibility(true);
-        _toggleMoreToExplorePrompt.SetVisibility(true);
-        _moveEntryPrompt.SetVisibility(true);
-        _deleteEntryPrompt.SetVisibility(true);
-        
-        _togglePromptsPrompt.SetVisibility(true);
+        UpdatePrompts();
 
         switch (_currentState)
         {
@@ -312,6 +340,7 @@ public class JournalMode : ShipLogMode
                     if (movingEntry)
                     {
                         int newSelectedIndex = ItemList.GetSelectedIndex();
+                        // DON'T USE prevEntry HERE!!!!
                         (Store.Data.Entries[prevSelectedIndex], Store.Data.Entries[newSelectedIndex]) =
                             (Store.Data.Entries[newSelectedIndex], Store.Data.Entries[prevSelectedIndex]);
                         UpdateItems();
@@ -393,6 +422,54 @@ public class JournalMode : ShipLogMode
                 Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on update!", MessageType.Error);
                 break;
         }
+    }
+
+    private void UpdatePrompts()
+    {
+        bool emptyJournal = Store.Data.Entries.Count == 0;
+        JournalStore.Entry selectedEntry = emptyJournal ? null : Store.Data.Entries[ItemList.GetSelectedIndex()];
+
+        bool usingGamepad = OWInput.UsingGamepad();
+        if (usingGamepad != _usingGamepad)
+        {
+            // VERY IMPORTANT
+            // TODO: Bug when choosing photo with one and ending when other? Duplicated Prompts? 
+            RemovePrompts();
+            AddPrompts();
+        }
+
+        _createEntryPromptKbm.SetVisibility(_currentState == State.Main && !usingGamepad);
+        _createEntryPromptKbm.SetDisplayState(emptyJournal
+            ? ScreenPrompt.DisplayState.Attention
+            : ScreenPrompt.DisplayState.Normal);
+        _createEntryPromptGamepad.SetVisibility(_currentState == State.Main && usingGamepad);
+        _createEntryPromptGamepad.SetDisplayState(emptyJournal
+            ? ScreenPrompt.DisplayState.Attention
+            : ScreenPrompt.DisplayState.GrayedOut);
+        _renameEntryPromptKbm.SetVisibility(_currentState == State.Main && !usingGamepad && !emptyJournal);
+        _renameEntryPromptGamepad.SetVisibility(_currentState == State.Main && usingGamepad && !emptyJournal);
+        _renameEntryPromptGamepad.SetDisplayState(ScreenPrompt.DisplayState.GrayedOut);
+        _editDescriptionPromptKbm.SetVisibility(_currentState == State.Main && !usingGamepad && !emptyJournal);
+        _editDescriptionPromptGamepad.SetVisibility(_currentState == State.Main && usingGamepad && !emptyJournal);
+        _editDescriptionPromptGamepad.SetDisplayState(ScreenPrompt.DisplayState.GrayedOut);
+        _setPhotoPrompt.SetVisibility(_currentState == State.Main && !emptyJournal);
+        bool hasPhoto = selectedEntry?.EpicasAlbumSnapshotName != null;
+        // TODO: Translation
+        _setPhotoPrompt.SetText(hasPhoto ? "Change Photo" : "Add Photo");
+        _removePhotoPrompt.SetVisibility(_currentState == State.Main && !emptyJournal && hasPhoto);
+        _toggleMoreToExplorePrompt.SetVisibility(_currentState == State.Main && !emptyJournal);
+        _toggleMoreToExplorePrompt.SetText(!emptyJournal && selectedEntry.HasMoreToExplore ? "Remove More to Explore" : "Add More to Explore");
+        _moveEntryPrompt.SetVisibility(_currentState == State.Main && Store.Data.Entries.Count > 1);
+        _deleteEntryPrompt.SetVisibility(_currentState == State.Main && !emptyJournal);
+
+        _togglePromptsPrompt.SetVisibility(_currentState == State.Main);
+        _togglePromptsPrompt.SetDisplayState(emptyJournal && !Store.Data.ShowPrompts ? ScreenPrompt.DisplayState.Attention : ScreenPrompt.DisplayState.Normal);
+        _togglePromptsPrompt.SetText(Store.Data.ShowPrompts ? "Hide Prompts" : "Show Prompts");
+        _confirmInputPromptKbm.SetVisibility(UsingInput() && !usingGamepad);
+        _confirmInputPromptGamepad.SetVisibility(UsingInput() && usingGamepad);
+        _confirmInputPromptGamepad.SetDisplayState(ScreenPrompt.DisplayState.GrayedOut);
+        _confirmDeletePrompt.SetVisibility(_currentState == State.Deleting);
+        _cancelDeletePrompt.SetVisibility(_currentState == State.Deleting);
     }
 
     private void CreateEntry()
@@ -570,7 +647,7 @@ public class JournalMode : ShipLogMode
     {
         Store.Data.ShowPrompts = !Store.Data.ShowPrompts;
         _mainPromptListAnimator.AnimateTo(1f, 
-                Store.Data.ShowPrompts? _mainPromptListShownScale : _mainPromptListHiddenScale, 0.15f);
+                Store.Data.ShowPrompts? _mainPromptListShownScale : _mainPromptListHiddenScale, 0.1f);
         _oneShotSource.PlayOneShot(Store.Data.ShowPrompts ? _positiveSound : _negativeSound);
         _pendingSave = true;
     }
