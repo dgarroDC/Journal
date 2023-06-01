@@ -21,6 +21,7 @@ public class JournalMode : ShipLogMode
 
     private State _currentState;
     private bool _creatingNewEntry;
+    private bool _dontChoosePhotoOnNextRelease; // too hacky?
     private bool _pendingSave;
     private IEpicasAlbumAPI _epicasAlbumAPI;
 
@@ -370,7 +371,7 @@ public class JournalMode : ShipLogMode
                 {
                     return;
                 }
-                if (OWInput.IsPressed(InputLibrary.enter, 0.5f))
+                if (OWInput.IsPressed(InputLibrary.enter, 0.4f))
                 {
                     RenameEntry();
                 }
@@ -383,9 +384,18 @@ public class JournalMode : ShipLogMode
                 {
                     ToggleMoreToExplore();
                 }
-                else if (OWInput.IsNewlyPressed(InputLibrary.toolActionPrimary))
+                else if (OWInput.IsNewlyReleased(InputLibrary.toolActionPrimary))
                 {
-                    ChoosePhoto();
+                    if (!_dontChoosePhotoOnNextRelease)
+                    {
+                        ChoosePhoto();
+                    }
+                    _dontChoosePhotoOnNextRelease = false;
+                    // TODO: This prevent any input to be processed this frame! Should many inputs be allowed per frame?
+                }
+                else if (OWInput.IsPressed(InputLibrary.toolActionPrimary, 0.6f))
+                {
+                    RemovePhoto();
                 }
                 else if (OWInput.IsNewlyPressed(InputLibrary.toolActionSecondary)) // Like Épicas
                 {
@@ -600,6 +610,20 @@ public class JournalMode : ShipLogMode
             _currentState = State.Main;
             OpenList();
         });
+    }
+
+    private void RemovePhoto()
+    {
+        int selectedIndex = ItemList.GetSelectedIndex();
+        JournalStore.Entry selectedEntry = Store.Data.Entries[selectedIndex];
+        if (selectedEntry.EpicasAlbumSnapshotName != null)
+        {
+            selectedEntry.EpicasAlbumSnapshotName = null;
+            UpdatePhoto();
+            _pendingSave = true;
+            _oneShotSource.PlayOneShot(_negativeSound, 3f);
+            _dontChoosePhotoOnNextRelease = true;
+        }
     }
 
     private void MarkForDeletion()
