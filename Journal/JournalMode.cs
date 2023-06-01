@@ -83,7 +83,7 @@ public class JournalMode : ShipLogMode
         {
             Text text = entryListItem._nameField;
             CustomInputField input = AddInputFieldInput(text);
-            // TODO: max length
+            input.characterLimit = 40; // Room for extra icons just in case...
             _entryInputs.Add(input);
         }
         
@@ -399,7 +399,6 @@ public class JournalMode : ShipLogMode
                 }
                 break;
             case State.EditingDescription:
-                // TODO: PAUSE
                 if (OWInput.IsNewlyPressed(InputLibrary.escape))
                 {
                     EditDescriptionEnd();
@@ -510,8 +509,6 @@ public class JournalMode : ShipLogMode
         ItemList.UpdateListUI(); 
         if (_creatingNewEntry)
         {
-            // TODO: Consider this in the "confirm" prompt?
-            // TODO: Update UI? Alpha for some reason, rumor color too?
             EditDescription();
             // No need to save file, it would be saved on description end
         }
