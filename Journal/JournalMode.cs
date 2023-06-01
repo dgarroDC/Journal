@@ -309,6 +309,12 @@ public class JournalMode : ShipLogMode
                 moreToExploreItem.DisplayText(UITextLibrary.GetString(UITextType.ShipLogMoreThere));
             }
         }
+        else
+        {
+            ShipLogFactListItem item = ItemList.DescriptionFieldGetNextItem();
+            // TODO: Translate
+            item.DisplayText("The Journal is empty, create your first entry now!");
+        }
     }
 
     private void UpdatePhoto()
