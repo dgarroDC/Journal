@@ -28,8 +28,7 @@ public class JournalMode : ShipLogMode
     private Image _photo;
     private Text _questionMark;
     private List<CustomInputField> _entryInputs;
-    private CustomInputField _firstDescInput;
-    private Image _firstDescBorderLine;
+    private CustomInputField _descInput;
 
     private readonly Color _selectionTextColor = new(0f, 0.2f, 0.3f);
     private readonly Color _editingTextColor = new(0.7f, 1f, 0.5f);
@@ -79,6 +78,17 @@ public class JournalMode : ShipLogMode
         _photo.preserveAspect = true; // Maybe this should be the default value...
         _questionMark = ItemList.GetQuestionMark();
 
+        _epicasAlbumAPI = Journal.Instance.ModHelper.Interaction
+            .TryGetModApi<IEpicasAlbumAPI>("dgarro.EpicasAlbum");
+        
+        SetupInputFields();
+        SetupPrompts();
+
+        _currentState = State.Disabled;
+    }
+
+    private void SetupInputFields()
+    {
         _entryInputs = new List<CustomInputField>();
         foreach (ShipLogEntryListItem entryListItem in ItemList.GetItemsUI())
         {
@@ -87,20 +97,25 @@ public class JournalMode : ShipLogMode
             input.characterLimit = 40; // Room for extra icons just in case...
             _entryInputs.Add(input);
         }
-        
+
         ItemList.DescriptionFieldClear();
-        Text firstDescText = ItemList.DescriptionFieldGetNextItem()._text;
-        _firstDescInput = AddInputFieldInput(firstDescText);
-        _firstDescInput.lineType = CustomInputField.LineType.MultiLineNewline;
-        _firstDescBorderLine = _firstDescInput.transform.Find("EntryBorderLine").GetComponent<Image>();
-        // TODO: idea: force expand height + not infinite panel (add to the mask thing?), sizedelta.y = 1 (for the last row... although active scrolling!)
-
-        _epicasAlbumAPI = Journal.Instance.ModHelper.Interaction
-            .TryGetModApi<IEpicasAlbumAPI>("dgarro.EpicasAlbum");
-        
-        SetupPrompts();
-
-        _currentState = State.Disabled;
+        GameObject itemTemplate = ItemList.DescriptionFieldGetNextItem().gameObject;
+        // We want the input to occupy the whole visible field
+        GameObject descInputGO = Instantiate(itemTemplate.gameObject, itemTemplate.transform.parent.parent);
+        descInputGO.name = "DescriptionInput";
+        RectTransform descInputRT = descInputGO.GetComponent<RectTransform>();
+        // We want space down to the bottom of the description field (8 lines),
+        // although that line would cause the desc field to enable scroll if we used an item,
+        // the characters are that are totally visible afaik, but not the bottom part of the caret...
+        // TODO: Better scroll? A way to indicate the user that there is text above o below the visible?
+        descInputRT.sizeDelta = new Vector2(descInputRT.sizeDelta.x, 196); // x is a bit below the top border
+        Text firstDescText = descInputGO.GetComponent<Text>();
+        _descInput = AddInputFieldInput(firstDescText);
+        _descInput.lineType = CustomInputField.LineType.MultiLineNewline;
+        // Don't show this line, although it would be nice to generate them while editing...
+        Destroy(descInputRT.Find("EntryBorderLine").gameObject);
+        // Also we don't need this componenet
+        descInputGO.DestroyAllComponents<ShipLogFactListItem>();
     }
 
     private void SetupPrompts()
@@ -533,7 +548,7 @@ public class JournalMode : ShipLogMode
         Store.Data.Entries[selectedIndex].Name = inputField.text;
         DisableInputField(inputField);
         UpdateItems();
-        // This is just for an alpha or something in UI index 4 (text should already be the correct one),
+        // This is also for an alpha or something in UI index 4 (might be required to restore rumor color too?),
         // noticeable for a frame or while editing description in entry
         ItemList.UpdateListUI(); 
         if (_creatingNewEntry)
@@ -552,11 +567,10 @@ public class JournalMode : ShipLogMode
     private void EditDescription()
     {
         int selectedIndex = ItemList.GetSelectedIndex();
-        _firstDescInput.text = Store.Data.Entries[selectedIndex].Description;
+        _descInput.text = Store.Data.Entries[selectedIndex].Description;
         ItemList.DescriptionFieldClear();
-        ItemList.DescriptionFieldGetNextItem();
-        EnableInputField(_firstDescInput);
-        _firstDescBorderLine.enabled = false;
+        _descInput.gameObject.SetActive(true);
+        EnableInputField(_descInput);
         _currentState = State.EditingDescription;
         _oneShotSource.PlayOneShot(_positiveSound, 3f);
     }
@@ -564,9 +578,9 @@ public class JournalMode : ShipLogMode
     private void EditDescriptionEnd()
     {
         int selectedIndex = ItemList.GetSelectedIndex();
-        Store.Data.Entries[selectedIndex].Description = _firstDescInput.text;
-        DisableInputField(_firstDescInput);
-        _firstDescBorderLine.enabled = true;
+        Store.Data.Entries[selectedIndex].Description = _descInput.text;
+        DisableInputField(_descInput);
+        _descInput.gameObject.SetActive(false);
         UpdateDescriptionField();
         _currentState = State.Main;
         _creatingNewEntry = false;
