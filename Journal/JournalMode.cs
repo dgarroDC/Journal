@@ -475,7 +475,7 @@ public class JournalMode : ShipLogMode
         _setPhotoPrompt.SetText(hasPhoto ? "Change Photo" : "Add Photo");
         _removePhotoPrompt.SetVisibility(_currentState == State.Main && !emptyJournal && hasPhoto);
         _toggleMoreToExplorePrompt.SetVisibility(_currentState == State.Main && !emptyJournal);
-        _toggleMoreToExplorePrompt.SetText(!emptyJournal && selectedEntry.HasMoreToExplore ? "Remove More to Explore" : "Add More to Explore");
+        _toggleMoreToExplorePrompt.SetText(!emptyJournal && selectedEntry.HasMoreToExplore ? "Unmark More to Explore" : "Mark More to Explore");
         _moveEntryPrompt.SetVisibility(_currentState == State.Main && Store.Data.Entries.Count > 1);
         _deleteEntryPrompt.SetVisibility(_currentState == State.Main && !emptyJournal);
 
