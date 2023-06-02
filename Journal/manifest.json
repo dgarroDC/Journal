@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/ow-mods/owml/master/schemas/manifest_schema.json",
   "filename": "Journal.dll",
   "author": "Damián Garro",
-  "name": "Journal",
+  "name": "The Hatchling's Journal",
   "uniqueName": "dgarro.Journal",
   "version": "1.0.0",
   "owmlVersion": "2.9.0",
