@@ -10,7 +10,6 @@ using UnityEditor;
 #endif
 
 // https://github.com/Unity-Technologies/uGUI/blob/2019.1/UnityEngine.UI/UI/Core/InputField.cs
-// TODO: Patch?
 namespace Journal
 {
     /// <summary>
@@ -1166,20 +1165,9 @@ namespace Journal
         /// </code>
         /// </example>
         protected void OnFocus()
-        { 
-            // LINES REPLACED TODO: PATCH
-            if (onFocusSelectAll) {
-                SelectAll();
-            }
-            else
-            {
-                MoveTextEnd(false);
-            }
-            // SelectAll();
+        {
+            SelectAll();
         }
-
-        // LINE ADDED - TODO: PATCH
-        public bool onFocusSelectAll;
 
         /// <summary>
         /// Highlight the whole InputField.
@@ -1737,23 +1725,22 @@ namespace Journal
                     return EditState.Continue;
                 }
 
-                // LINES REMOVED - TODO: PATCH
-                // // Submit
-                // case KeyCode.Return:
-                // case KeyCode.KeypadEnter:
-                // {
-                //     if (lineType != LineType.MultiLineNewline)
-                //     {
-                //         return EditState.Finish;
-                //     }
-                //     break;
-                // }
-                //
-                // case KeyCode.Escape:
-                // {
-                //     m_WasCanceled = true;
-                //     return EditState.Finish;
-                // }
+                // Submit
+                case KeyCode.Return:
+                case KeyCode.KeypadEnter:
+                {
+                    if (lineType != LineType.MultiLineNewline)
+                    {
+                        return EditState.Finish;
+                    }
+                    break;
+                }
+                
+                case KeyCode.Escape:
+                {
+                    m_WasCanceled = true;
+                    return EditState.Finish;
+                }
             }
 
             char c = evt.character;
@@ -2408,10 +2395,6 @@ namespace Journal
             }
             else
             {
-                // LINES REPLACED (TextGenerator bug with same char?) - TODO: Patch
-                m_DrawStart = 0;
-                m_DrawEnd = m_Text.Length;
-                return;
                 var characters = cachedInputTextGenerator.characters;
                 if (m_DrawEnd > cachedInputTextGenerator.characterCountVisible)
                     m_DrawEnd = cachedInputTextGenerator.characterCountVisible;

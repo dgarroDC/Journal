@@ -179,6 +179,16 @@ public class JournalMode : ShipLogMode
     {
         return _currentState is State.Renaming or State.EditingDescription;
     }
+    
+    public bool OwnsInputField(CustomInputField inputField)
+    {
+        return _entryInputs.Contains(inputField) || _descInput == inputField;
+    }
+
+    public bool CreatingNewEntry()
+    {
+        return _creatingNewEntry;
+    }
 
     public override void EnterMode(string entryID = "", List<ShipLogFact> revealQueue = null)
     {
@@ -367,7 +377,6 @@ public class JournalMode : ShipLogMode
 
     public override void UpdateMode()
     {
-        // TODO: What happens if desc field is scrolled while editing???
         UpdatePrompts();
 
         switch (_currentState)
@@ -596,7 +605,6 @@ public class JournalMode : ShipLogMode
 
     private void EnableInputField(CustomInputField inputField)
     {
-        inputField.onFocusSelectAll = _creatingNewEntry; // To quickly replace placeholder default text
         inputField.enabled = true;
         OWInput.ChangeInputMode(InputMode.KeyboardInput);
         Locator.GetPauseCommandListener().AddPauseCommandLock();
@@ -722,7 +730,6 @@ public class JournalMode : ShipLogMode
 
     public override bool AllowCancelInput()
     {
-        // TODO: fix _exitPrompt not changing!
         return _currentState == State.Main;
     }
 

@@ -1,4 +1,6 @@
-﻿using Journal.External;
+﻿using System.Reflection;
+using HarmonyLib;
+using Journal.External;
 using OWML.ModHelper;
 using UnityEngine;
 
@@ -14,20 +16,16 @@ public class Journal : ModBehaviour
 
     private void Start()
     {
+        Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly());
         Instance = this;
-        // I guess I'm always doing this...
-        ModHelper.HarmonyHelper.AddPostfix<ShipLogController>("LateInitialize", typeof(Journal), nameof(SetupPatch));
         LoadManager.OnCompleteSceneLoad += (_, _) => _setupDone = false;
     }
-    
-    private static void SetupPatch() {
-        Instance.Setup();
-    }
 
-    private void Setup()
+    public void Setup()
     {
         // Just copying this from Epicas, waiting for save framework!
-        string profileName = StandaloneProfileManager.SharedInstance?.currentProfile?.profileName ?? "XboxGamepassDefaultProfile";
+        string profileName = StandaloneProfileManager.SharedInstance?.currentProfile?.profileName ??
+                             "XboxGamepassDefaultProfile";
         _store = new JournalStore(profileName);
         CreateMode();
     }
@@ -49,27 +47,42 @@ public class Journal : ModBehaviour
         });
     }
 
-    private void Update()
+    public void ShipLogControllerUpdate(ShipLogController shipLogController)
     {
-        if (!_setupDone) return;
+        if (!_setupDone) return; // idk if necessary but just in case...
 
-        // Hack to get updates on other input mode...
-        // TODO: Better way...
-        if (_journalMode.UsingInput())
+        // Hack to workaround the early return because of input mode...
+        // The first condition is probably redundant
+        if (shipLogController._currentMode == _journalMode && _journalMode.UsingInput())
         {
+            shipLogController._exitPrompt.SetVisibility(_journalMode.AllowCancelInput()); // This should be false
             _journalMode.UpdateMode();
         }
     }
 
-    private void LateUpdate()
+    public void RefreshCursorState()
     {
         if (!_setupDone) return;
 
-        // Maybe it would be better to patch CursorManager...
-        // TODO: Yes, do it, this seems to cause some flickering? Although no idea how to reproduce
         if (_journalMode.UsingInput())
         {
+            // We use KeyboardInput but we don't want to show the mouse
+            // TODO: Show the mouse and make it usable on the input fields somehow?
             Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked; // idk
         }
+    }
+
+    public bool ShouldMoveCaretToEndOnFocus(CustomInputField inputField)
+    {
+        return UsingInput(inputField)
+               && !_journalMode.CreatingNewEntry(); // We want to select the whole default text when creating
+    }
+
+    public bool UsingInput(CustomInputField inputField)
+    {
+        return _setupDone &&
+               _journalMode.UsingInput() &&
+               _journalMode.OwnsInputField(inputField);
     }
 }
