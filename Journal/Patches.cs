@@ -31,8 +31,8 @@ public class Patches
     }
     
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(CustomInputField), "OnFocus")]
-    private static bool InputField_OnFocus(CustomInputField __instance)
+    [HarmonyPatch(typeof(InputField), "OnFocus")]
+    private static bool InputField_OnFocus(InputField __instance)
     {
         if (Journal.Instance.ShouldMoveCaretToEndOnFocus(__instance))
         {
@@ -44,14 +44,14 @@ public class Patches
     }
     
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(CustomInputField), "KeyPressed")]
-    private static bool InputField_KeyPressed(CustomInputField __instance, Event evt)
+    [HarmonyPatch(typeof(InputField), "KeyPressed")]
+    private static bool InputField_KeyPressed(InputField __instance, Event evt)
     {
         if (Journal.Instance.UsingInput(__instance))
         {
             // Prevent "submit" or "cancel" actions
             KeyCode keyCode = evt.keyCode;
-            bool wouldSubmit = __instance.lineType != CustomInputField.LineType.MultiLineNewline && 
+            bool wouldSubmit = __instance.lineType != InputField.LineType.MultiLineNewline && 
                                (keyCode == KeyCode.Return || keyCode == KeyCode.KeypadEnter);
             bool wouldCancel = keyCode == KeyCode.Escape;
             if (wouldSubmit || wouldCancel)
@@ -67,8 +67,8 @@ public class Patches
     }
     
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(CustomInputField), "SetDrawRangeToContainCaretPosition")]
-    private static void InputField_SetDrawRangeToContainCaretPosition(CustomInputField __instance,
+    [HarmonyPatch(typeof(InputField), "SetDrawRangeToContainCaretPosition")]
+    private static void InputField_SetDrawRangeToContainCaretPosition(InputField __instance,
         TextGenerator ___m_InputTextCache,
         ref int ___m_DrawStart,
         ref int ___m_DrawEnd)

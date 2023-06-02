@@ -3,6 +3,7 @@ using HarmonyLib;
 using Journal.External;
 using OWML.ModHelper;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Journal;
 
@@ -73,13 +74,13 @@ public class Journal : ModBehaviour
         }
     }
 
-    public bool ShouldMoveCaretToEndOnFocus(CustomInputField inputField)
+    public bool ShouldMoveCaretToEndOnFocus(InputField inputField)
     {
         return UsingInput(inputField)
                && !_journalMode.CreatingNewEntry(); // We want to select the whole default text when creating
     }
 
-    public bool UsingInput(CustomInputField inputField)
+    public bool UsingInput(InputField inputField)
     {
         return _setupDone &&
                _journalMode.UsingInput() &&

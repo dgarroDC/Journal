@@ -27,8 +27,8 @@ public class JournalMode : ShipLogMode
 
     private Image _photo;
     private Text _questionMark;
-    private List<CustomInputField> _entryInputs;
-    private CustomInputField _descInput;
+    private List<InputField> _entryInputs;
+    private InputField _descInput;
 
     private readonly Color _selectionTextColor = new(0f, 0.2f, 0.3f);
     private readonly Color _editingTextColor = new(0.7f, 1f, 0.5f);
@@ -89,11 +89,11 @@ public class JournalMode : ShipLogMode
 
     private void SetupInputFields()
     {
-        _entryInputs = new List<CustomInputField>();
+        _entryInputs = new List<InputField>();
         foreach (ShipLogEntryListItem entryListItem in ItemList.GetItemsUI())
         {
             Text text = entryListItem._nameField;
-            CustomInputField input = AddInputFieldInput(text);
+            InputField input = AddInputFieldInput(text);
             input.characterLimit = 40; // Room for extra icons just in case...
             _entryInputs.Add(input);
         }
@@ -111,7 +111,7 @@ public class JournalMode : ShipLogMode
         descInputRT.sizeDelta = new Vector2(descInputRT.sizeDelta.x, 196); // x is a bit below the top border
         Text firstDescText = descInputGO.GetComponent<Text>();
         _descInput = AddInputFieldInput(firstDescText);
-        _descInput.lineType = CustomInputField.LineType.MultiLineNewline;
+        _descInput.lineType = InputField.LineType.MultiLineNewline;
         // Don't show this line, although it would be nice to generate them while editing...
         Destroy(descInputRT.Find("EntryBorderLine").gameObject);
         // Also we don't need this componenet
@@ -164,9 +164,9 @@ public class JournalMode : ShipLogMode
         _mainPromptListAnimator.SetImmediate(1f, Store.Data.ShowPrompts ? _mainPromptListShownScale : _mainPromptListHiddenScale);
     }
 
-    private CustomInputField AddInputFieldInput(Text text)
+    private InputField AddInputFieldInput(Text text)
     {
-        CustomInputField input = text.gameObject.AddComponent<CustomInputField>();
+        InputField input = text.gameObject.AddComponent<InputField>();
         input.textComponent = text;
         input.caretWidth = 2; // Otherwise it's too thin
         input.selectionColor = _selectionTextColor; // Important alpha=1 for overlap in description field
@@ -180,7 +180,7 @@ public class JournalMode : ShipLogMode
         return _currentState is State.Renaming or State.EditingDescription;
     }
     
-    public bool OwnsInputField(CustomInputField inputField)
+    public bool OwnsInputField(InputField inputField)
     {
         return _entryInputs.Contains(inputField) || _descInput == inputField;
     }
@@ -549,7 +549,7 @@ public class JournalMode : ShipLogMode
     private void RenameEntry()
     {
         int selectedIndex = ItemList.GetSelectedIndex();
-        CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
+        InputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
         inputField.text = Store.Data.Entries[selectedIndex].Name;
         EnableInputField(inputField);
         _currentState = State.Renaming;
@@ -559,7 +559,7 @@ public class JournalMode : ShipLogMode
     private void RenameEntryEnd()
     {
         int selectedIndex = ItemList.GetSelectedIndex();
-        CustomInputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
+        InputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
         Store.Data.Entries[selectedIndex].Name = inputField.text;
         DisableInputField(inputField);
         UpdateItems();
@@ -603,7 +603,7 @@ public class JournalMode : ShipLogMode
         _oneShotSource.PlayOneShot(_negativeSound, 3f);
     }
 
-    private void EnableInputField(CustomInputField inputField)
+    private void EnableInputField(InputField inputField)
     {
         inputField.enabled = true;
         OWInput.ChangeInputMode(InputMode.KeyboardInput);
@@ -613,7 +613,7 @@ public class JournalMode : ShipLogMode
         inputField.textComponent.color = _editingTextColor;
     }
 
-    private void DisableInputField(CustomInputField inputField)
+    private void DisableInputField(InputField inputField)
     {
         inputField.textComponent.color = _prevTextColor;
         inputField.DeactivateInputField();
