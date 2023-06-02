@@ -2,31 +2,28 @@
 
 ![thumbnail](images/thumbnail.jpg)
 
-This is **your** journal. A [Custom Ship Log Mode](https://outerwildsmods.com/mods/customshiplogmodes/) added to your computer that lets you create and view your own Ship Log entries. 
+This is **your** Journal. This Outer Wilds mod adds a [Custom Ship Log Mode](https://outerwildsmods.com/mods/customshiplogmodes/) added to your computer that lets you create and view your own Ship Log entries. 
 
-Entries are displayed in a list that looks like the one from the vanilla Map Mode. You can write any name and description (the text that appears in the field below the list) and edit them anytime (or even delete or reorder them).
+The entries are displayed in a list format, similar to the vanilla Map Mode. You can write any name and description (the text that appears in the field below the list) and edit, delete or reorder them as you please.
 
 ![screenshot](images/screenshot.jpg)
 
-Maybe you want to complement the vanilla Ship Log with your own notes (without using an external tool), or you want a more challenging experience by ignoring the game Ship Log altogether and rely completely on the things you write. Have you already won the game? You could use this tool to play the DLC if you haven't already, or even with some of the [story mods](https://outerwildsmods.com/mods/?tag=story). However, this can be used for anything else you have in mind, here there are some ideas, but the possibilities are endless:
-- Replay the game with a more role-play experience by writing the Hatchling's journey from their perspective
-- Write down your school notes so you can study for that exam without leaving your spaceship
-- Use this as your grocery list
+With this mod, you can enhance your Outer Wilds experience in various ways. Maybe you want to complement the vanilla Ship Log with personal notes, create a more challenging and less hand-holding gameplay by relying solely on your own entries and ignoring the ones the game writes for you. Have you already beaten the game? You could use this tool to play the DLC if you haven't already, or with some of the [story mods](https://outerwildsmods.com/mods/?tag=story). Another option is to replay the game with a more role-play experience by writing the Hatchling's journey from their perspective. Or even use it for practical purposes like keeping school notes so you can study for that exam without leaving your spaceship or use it as your grocery list, the possibilities are endless, you probably have better ideas.
 
-This mod unleashes the full power of [Épicas Album](https://outerwildsmods.com/mods/picasalbum/). Any snapshot you have taken and uploaded to that album (or just memes you moved to the folder) can be used as the photo of your Journal's entries.
+This mod unleashes the full power of [Épicas Album](https://outerwildsmods.com/mods/picasalbum/), enabling you to use your uploaded snapshots (or memes) as the photos for your Journal's entries.
 
-Entries without photos are displayed with orange names. That is like in the base game, where these entries represent "rumors" that weren't explored yet, but you don't necessarily have to adhere to these semantics for your notes.
+Entries without photos are displayed with orange names, similar to the entries in the base game that represent "rumors" that weren't explored yet. However, you can interpret and use these entries however you like; there are no strict semantics to follow for your personal notes.
 
-You can also add the "More to Explore" icon to the entries, that also includes the *"There's more to explore here."* orange item to the description, but you may also this to just mark some entries that you consider that needs some particular attention.
+You can also add the "More to Explore" icon to the entries, that also includes the *"There's more to explore here."* orange text item to the description, but you may also this to just mark some entries that you consider that needs some particular attention, like a bookmark.
 
-Input fields (for the entry name and description) require the usage of the keyboard, if you're a gamepad user you should put it down when you want to create entries or edit some of the texts. These fields also allow some usual commands like copy and paste, moving the caret or selecting text.
+To create or edit entries, please note that the input fields (for the entry name and description) require keyboard usage. If you're using a gamepad, you'll need to set it aside temporarily when interacting with these fields. These fields also allow some usual commands like copy and paste, moving the caret or selecting text.
 
-## The savefile
+## Savefile Management
 
-The changes made to your Journal are saved when you exit the mode (changing to another Ship Log Mode or exiting the computer). This is saved to disk in the "saves" folder inside of the mod folder. Each Outer Wilds profile has its own separate Journal. There's a file "(profile name).json" (**JSON** file) for each of them. If you consider your journal valuable, please backup this as you should do with any file you don't want to lose (this also applies to the images from Épicas Album that you could use in your Journal, backup them too).
+Changes made to your Journal are saved to disk when you exit the mode by either switching to another Ship Log mode or exiting the computer. The save files are stored in the "saves" folder within the mod directory. Each Outer Wilds profile has its own separate Journal, represented by a "(profile name).json" (**JSON** file). To ensure the safety of your Journal, it's recommended to back up this file (as well as any images from Épicas Album that you use), as you should do with any file you don't want to lose in general.
 
-Also, remember that uninstalling the mod (not disabling it) completely deletes the mod folder including all the saves!
+⚠️Please note that uninstalling the mod (not disabling it) will delete the entire mod folder, including all the saved files. Exercise caution when uninstalling the mod to avoid losing your Journal.⚠️
 
-You may also see that there are some "(profile name).json.old" (**OLD** file) files in the "saves" folder. This is a backup the mod automatically does; sometimes when the Journal is saved, a copy of the previous file is made (adding the ".old" extension) before overwriting the savefile with the new changes. This happens on the first save made in each loop. The file is there just in case you messed up and you want to restore a previous version of your Journal (simply delete the main JSON file and remove the ".old" extension from the OLD file in that case).
+Additionally, you may find "(profile name).json.old" (**OLD** files) in the "saves" folder. These files serve as automatic backups created during the first save in each loop before overwriting with changes. If needed, you can restore a previous version of your Journal by deleting the main JSON file and removing the ".old" extension from the corresponding OLD file.
 
-Please avoid manually editing the savefile unless you really know what you are reading. If the game is unable to read your savefile (maybe because you broke something by editing it, or maybe because some unknown bug), the Journal would start empty again. But don't worry, if that happens, a ".corrupted" extension is added to the savefile to prevent it from being overwritten by the new fresh Journal. That means that you would find a file named "(profile name).json.corrupted" (**CORRUPTED** file). You could try to edit the contents of this file to fix any mistake you previously made (and remove the ".corrupted" extension) or ask for help by [opening an issue](https://github.com/dgarroDC/Journal/issues) or going to the [Outer Wilds Modding discord server](https://discord.gg/CRfxGWJG24). Restoring the OLD file might also be an option.
+Manually editing the savefile is not recommended unless you fully understand its structure. If the game fails to read the savefile, the Journal would start empty again. But don't worry, if that happens, a ".corrupted" extension is added to the previous savefile to prevent it from being overwritten by the new fresh Journal.  In such cases, you can attempt to fix any mistakes by editing the "(profile name).json.corrupted" (**CORRUPTED*** file), or seek assistance by opening an issue on [GitHub repository](https://github.com/dgarroDC/Journal/issues) or joining the [Outer Wilds Modding discord server](https://discord.gg/CRfxGWJG24). Restoring the OLD file could also be a viable option.
