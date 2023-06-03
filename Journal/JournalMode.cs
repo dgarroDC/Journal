@@ -390,9 +390,10 @@ public class JournalMode : ShipLogMode
                     if (movingEntry)
                     {
                         int newSelectedIndex = ItemList.GetSelectedIndex();
-                        // DON'T USE prevEntry HERE!!!!
-                        (Store.Data.Entries[prevSelectedIndex], Store.Data.Entries[newSelectedIndex]) =
-                            (Store.Data.Entries[newSelectedIndex], Store.Data.Entries[prevSelectedIndex]);
+                        JournalStore.Entry prevSelectedEntry = Store.Data.Entries[prevSelectedIndex];
+                        // Don't swap the elements, that is weird when changing first<->last
+                        Store.Data.Entries.RemoveAt(prevSelectedIndex);
+                        Store.Data.Entries.Insert(newSelectedIndex, prevSelectedEntry);
                         UpdateItems();
                         ItemList.UpdateListUI(); // Avoid ugly frame, show the updated list now
                         _pendingSave = true;
