@@ -6,13 +6,13 @@ This is **your** Journal. This Outer Wilds mod adds a [Custom Ship Log Mode](htt
 
 The entries are conveniently presented in a list format, similar to the vanilla Map Mode. You have the freedom to write names and descriptions for each entry, and you can easily edit, delete, or rearrange them as you please.
 
-![entries-example](images/entries-example.gif)
+![entries-example](images/entries-example.webp)
 
 With this mod, you can enhance your Outer Wilds adventure in various ways. Maybe you want to complement the vanilla Ship Log with personal notes, or create a more challenging and less hand-holding experience by relying solely on your own entries and ignoring the ones the game writes for you. Have you already beaten the game? You could use this tool to play the DLC if you haven't already, or with some of the [story mods](https://outerwildsmods.com/mods/?tag=story). Another option is to replay the game and immerse yourself in a role-playing journey by chronicling it from Hatchling's perspective. You can even use it for practical purposes like keeping school notes so you can study for that exam without leaving your spaceship or managing your grocery list, the possibilities are endless, you probably have better ideas.
 
 The Hatchling's Journal unleashes the full power of [Épicas Album](https://outerwildsmods.com/mods/picasalbum/), enabling you to use your scout's uploaded snapshots (or memes) as the photos for your Journal's entries.
 
-![epicas-example](images/epicas-example.gif)
+![epicas-example](images/epicas-example.webp)
 
 Entries without photos are displayed with orange names, similar to the entries in the base game that represent "rumors" that weren't explored yet. However, you can interpret and use these entries however you like; there are no strict semantics to follow for your personal notes.
 
@@ -20,7 +20,7 @@ You can also add the "More to Explore" icon to the entries, along with the  *"Th
 
 To create or edit entries, please note that the input fields (for the entry name and description) require keyboard usage. If you're using a gamepad, you'll need to set it aside temporarily when interacting with these fields. These fields also allow some usual commands like copy and paste, moving the caret or selecting text.
 
-![input-example](images/input-example.gif)
+![input-example](images/input-example.webp)
 
 ## Savefile Management
 
