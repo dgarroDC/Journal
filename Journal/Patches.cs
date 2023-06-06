@@ -26,7 +26,7 @@ public class Patches
     [HarmonyPatch(typeof(CursorManager), nameof(CursorManager.RefreshCursorState))]
     private static void CursorManager_RefreshCursorState()
     {
-        // We need a patch, if we use LateUpdate() hack sometimes the cursor is visible for some reason
+        // We need a patch, if we use LateUpdate() hack sometimes the cursor is visible for some reason (TODO: still happening?!)
         Journal.Instance.RefreshCursorState();
     }
     
