@@ -27,6 +27,7 @@ public class JournalMode : ShipLogMode
 
     private Image _photo;
     private Text _questionMark;
+    private string _questionMarkDefaultText;
     private List<InputField> _entryInputs;
     private InputField _descInput;
 
@@ -77,6 +78,7 @@ public class JournalMode : ShipLogMode
         _photo = ItemList.GetPhoto();
         _photo.preserveAspect = true; // Maybe this should be the default value...
         _questionMark = ItemList.GetQuestionMark();
+        _questionMarkDefaultText = _questionMark.text;
 
         _epicasAlbumAPI = Journal.Instance.ModHelper.Interaction
             .TryGetModApi<IEpicasAlbumAPI>("dgarro.EpicasAlbum");
@@ -303,6 +305,19 @@ public class JournalMode : ShipLogMode
         {
             int selectedIndex = ItemList.GetSelectedIndex();
             JournalStore.Entry selectedEntry = Store.Data.Entries[selectedIndex];
+            
+            // Maybe there should be a flag of missing photo already or something, but this just works...
+            string snapshotName = selectedEntry.EpicasAlbumSnapshotName;
+            if (snapshotName != null)
+            {
+                Sprite snapshotSprite = _epicasAlbumAPI.GetSnapshotSprite(snapshotName);
+                if (snapshotSprite == null)
+                {
+                    ShipLogFactListItem missingImageItem = ItemList.DescriptionFieldGetNextItem();
+                    missingImageItem.DisplayText($"<color=red>Photo \"{snapshotName}\" not found in Épicas Album!</color>");
+                }
+            }
+
             string description = selectedEntry.Description;
             string[] facts = description.Split(new[] { "\n\n" },
                 StringSplitOptions.RemoveEmptyEntries);
@@ -335,14 +350,26 @@ public class JournalMode : ShipLogMode
             JournalStore.Entry selectedEntry = Store.Data.Entries[selectedIndex];
             if (selectedEntry.EpicasAlbumSnapshotName != null)
             {
-                _questionMark.gameObject.SetActive(false);
-                _photo.gameObject.SetActive(true);
-                _photo.sprite = _epicasAlbumAPI.GetSnapshotSprite(selectedEntry.EpicasAlbumSnapshotName);
+                Sprite snapshotSprite = _epicasAlbumAPI.GetSnapshotSprite(selectedEntry.EpicasAlbumSnapshotName);
+                if (snapshotSprite != null)
+                {
+                    _questionMark.gameObject.SetActive(false);
+                    _photo.gameObject.SetActive(true);
+                    _photo.sprite = snapshotSprite;
+                }
+                else
+                {
+                    _questionMark.gameObject.SetActive(true);
+                    _photo.gameObject.SetActive(false);
+                    _questionMark.text = _questionMarkDefaultText;
+                    _questionMark.text = "<color=red>X</color>";
+                }
             }
             else
             {
                 _questionMark.gameObject.SetActive(true);
                 _photo.gameObject.SetActive(false);
+                _questionMark.text = _questionMarkDefaultText;
             }
         }
         else
@@ -650,6 +677,7 @@ public class JournalMode : ShipLogMode
             int selectedIndex = ItemList.GetSelectedIndex();
             Store.Data.Entries[selectedIndex].EpicasAlbumSnapshotName = selectedSnapshotName;
             UpdatePhoto();
+            UpdateDescriptionField(); // Just to clear the image not found error
             UpdateItems();
             ItemList.UpdateListUI(); // To remove rumor color if it had it
             _pendingSave = true;
@@ -670,6 +698,7 @@ public class JournalMode : ShipLogMode
         {
             selectedEntry.EpicasAlbumSnapshotName = null;
             UpdatePhoto();
+            UpdateDescriptionField(); // Just to clear the image not found error, although here it could look silly to always reset the scroll...
             UpdateItems();
             ItemList.UpdateListUI(); // For the rumor color
             _pendingSave = true;
