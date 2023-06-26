@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Journal.External;
 using OWML.Common;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Journal;
@@ -84,6 +85,7 @@ public class JournalMode : ShipLogMode
             .TryGetModApi<IEpicasAlbumAPI>("dgarro.EpicasAlbum");
         
         SetupInputFields();
+        SetupRaycast();
         SetupPrompts();
 
         _currentState = State.Disabled;
@@ -116,8 +118,22 @@ public class JournalMode : ShipLogMode
         _descInput.lineType = InputField.LineType.MultiLineNewline;
         // Don't show this line, although it would be nice to generate them while editing...
         Destroy(descInputRT.Find("EntryBorderLine").gameObject);
-        // Also we don't need this componenet
+        // Also we don't need this component
         descInputGO.DestroyAllComponents<ShipLogFactListItem>();
+    }
+    
+    
+    private void SetupRaycast()
+    {
+        // GameObject.Find("Ship_Body/Module_Cabin/Systems_Cabin/ShipLogPivot/ShipLog/ShipLogPivot/ShipLogCanvas/");
+        GameObject canvas = GetComponentInParent<Canvas>().gameObject;
+        canvas.AddComponent<GraphicRaycaster>();
+        
+        // Maybe I should should just find the ones bothering me?
+        foreach (Image image in canvas.GetComponentsInChildren<Image>())
+        {
+            image.raycastTarget = false;
+        }
     }
 
     private void SetupPrompts()
@@ -204,6 +220,8 @@ public class JournalMode : ShipLogMode
             Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on enter!", MessageType.Error);
         }
         _currentState = State.Main;
+
+        //Cursor.SetCursor(_photo.sprite.texture, Vector2.zero, CursorMode.Auto);
     }
 
     private void OpenList()
@@ -394,6 +412,8 @@ public class JournalMode : ShipLogMode
             Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on exit!", MessageType.Error);
         }
         _currentState = State.Disabled;
+        
+        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     }
 
     private void CloseList()
@@ -508,6 +528,22 @@ public class JournalMode : ShipLogMode
                 Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on update!", MessageType.Error);
                 break;
         }
+
+        RectTransform questionMarkTransform = (RectTransform)_photo.transform.parent.transform;
+        Vector2 mousePos = Mouse.current.position.ReadValue();
+        Vector3 worldPoint = Locator.GetActiveCamera().ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, questionMarkTransform.position.z));
+        // questionMarkTransform.position =
+        // worldPoint;
+
+        Vector2 localPoint;
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(questionMarkTransform.parent as RectTransform, mousePos,
+            Locator.GetActiveCamera().mainCamera, out localPoint);
+        ItemList.SetName("Pos="+mousePos+","+worldPoint+","+localPoint);
+       // questionMarkTransform.anchoredPosition = localPoint;
+       questionMarkTransform.localPosition = new Vector3(localPoint.x, localPoint.y, questionMarkTransform.localPosition.z);
+        //questionMarkTransform.pivot = new Vector2(0.5f, 0.5f);
+
     }
 
     private void UpdatePrompts()

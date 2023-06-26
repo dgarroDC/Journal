@@ -69,8 +69,9 @@ public class Journal : ModBehaviour
         {
             // We use KeyboardInput but we don't want to show the mouse
             // TODO: Show the mouse and make it usable on the input fields somehow?
-            Cursor.visible = false;
-            Cursor.lockState = CursorLockMode.Locked; // idk
+            //Cursor.visible = false;
+            //Cursor.lockState = CursorLockMode.Locked; // idk
+            // TODO: Add GraphicRayscaster, disable Graphic.raycastTarget in various border elements (or check for a priority or soemthign?)
         }
     }
 
