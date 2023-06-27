@@ -58,6 +58,8 @@ public class JournalMode : ShipLogMode
     private ScreenPrompt _togglePromptsPrompt;
     private ScreenPrompt _confirmInputPromptKbm;
     private ScreenPrompt _confirmInputPromptGamepad;
+    private ScreenPrompt _discardInputPromptKbm;
+    private ScreenPrompt _discardInputPromptGamepad;
     private ScreenPrompt _confirmDeletePrompt;
     private ScreenPrompt _cancelDeletePrompt;
 
@@ -178,7 +180,10 @@ public class JournalMode : ShipLogMode
         
         _togglePromptsPrompt = new ScreenPrompt(InputLibrary.map, "");
         _confirmInputPromptKbm = new ScreenPrompt(InputLibrary.escape, "Confirm Text");
-        _confirmInputPromptGamepad = new ScreenPrompt(InputLibrary.escape, $"Confirm Text {keyboardRequiredPrompt}");
+        _confirmInputPromptGamepad = new ScreenPrompt($"Confirm Text {keyboardRequiredPrompt}");
+        _discardInputPromptKbm = new ScreenPrompt(InputLibrary.shiftL, InputLibrary.escape, 
+            $"Discard Changes <CMD1>{holdPrompt} +<CMD2>", ScreenPrompt.MultiCommandType.CUSTOM_BOTH);
+        _discardInputPromptGamepad = new ScreenPrompt($"Discard Text {keyboardRequiredPrompt}");
         _confirmDeletePrompt = new ScreenPrompt(InputLibrary.interact, $"Confirm Delete {holdPrompt}");
         _cancelDeletePrompt = new ScreenPrompt(InputLibrary.cancel, $"Cancel Delete");
 
@@ -259,7 +264,8 @@ public class JournalMode : ShipLogMode
             promptManager.AddScreenPrompt(_createEntryPromptKbm, _mainPromptList, TextAnchor.MiddleRight);
             promptManager.AddScreenPrompt(_renameEntryPromptKbm, _mainPromptList, TextAnchor.MiddleRight);
             promptManager.AddScreenPrompt(_editDescriptionPromptKbm, _mainPromptList, TextAnchor.MiddleRight);
-            
+
+            promptManager.AddScreenPrompt(_discardInputPromptKbm, _upperRightPromptList, TextAnchor.MiddleRight);
             promptManager.AddScreenPrompt(_confirmInputPromptKbm, _upperRightPromptList, TextAnchor.MiddleRight);
         }
         else
@@ -267,7 +273,8 @@ public class JournalMode : ShipLogMode
             promptManager.AddScreenPrompt(_createEntryPromptGamepad, _mainPromptList, TextAnchor.MiddleRight);
             promptManager.AddScreenPrompt(_renameEntryPromptGamepad, _mainPromptList, TextAnchor.MiddleRight);
             promptManager.AddScreenPrompt(_editDescriptionPromptGamepad, _mainPromptList, TextAnchor.MiddleRight);
-            
+
+            promptManager.AddScreenPrompt(_discardInputPromptGamepad, _upperRightPromptList, TextAnchor.MiddleRight);
             promptManager.AddScreenPrompt(_confirmInputPromptGamepad, _upperRightPromptList, TextAnchor.MiddleRight);
         }
 
@@ -300,6 +307,8 @@ public class JournalMode : ShipLogMode
         promptManager.RemoveScreenPrompt(_togglePromptsPrompt);
         promptManager.RemoveScreenPrompt(_confirmInputPromptKbm);
         promptManager.RemoveScreenPrompt(_confirmInputPromptGamepad);
+        promptManager.RemoveScreenPrompt(_discardInputPromptKbm);
+        promptManager.RemoveScreenPrompt(_discardInputPromptGamepad);
         promptManager.RemoveScreenPrompt(_confirmDeletePrompt);
         promptManager.RemoveScreenPrompt(_cancelDeletePrompt);
     }
@@ -443,6 +452,7 @@ public class JournalMode : ShipLogMode
         UpdatePrompts();
         UpdateCursor();
 
+        bool shiftPressed = OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR);
         switch (_currentState)
         {
             case State.Main:
@@ -450,7 +460,7 @@ public class JournalMode : ShipLogMode
                 int delta = ItemList.UpdateList();
                 if (delta != 0)
                 {
-                    bool movingEntry = OWInput.IsPressed(InputLibrary.thrustUp);
+                    bool movingEntry = OWInput.IsPressed(InputLibrary.thrustUp); // This is by default also shift in keyboard
                     if (movingEntry)
                     {
                         int newSelectedIndex = ItemList.GetSelectedIndex();
@@ -476,7 +486,6 @@ public class JournalMode : ShipLogMode
                 }
                 
                 // Keyboard-required actions, all with enter
-                bool shiftPressed = OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR);
                 if (shiftPressed && OWInput.IsNewlyPressed(InputLibrary.enter))
                 {
                     CreateEntry();
@@ -519,13 +528,13 @@ public class JournalMode : ShipLogMode
             case State.Renaming:
                 if (OWInput.IsNewlyPressed(InputLibrary.escape))
                 {
-                    RenameEntryEnd();
+                    RenameEntryEnd(shiftPressed && !_creatingNewEntry);
                 }
                 break;
             case State.EditingDescription:
                 if (OWInput.IsNewlyPressed(InputLibrary.escape))
                 {
-                    EditDescriptionEnd();
+                    EditDescriptionEnd(shiftPressed && !_creatingNewEntry);
                 }
                 break;
             case State.Deleting:
@@ -606,6 +615,9 @@ public class JournalMode : ShipLogMode
         _confirmInputPromptKbm.SetVisibility(UsingInput() && !usingGamepad);
         _confirmInputPromptGamepad.SetVisibility(UsingInput() && usingGamepad);
         _confirmInputPromptGamepad.SetDisplayState(ScreenPrompt.DisplayState.GrayedOut);
+        _discardInputPromptKbm.SetVisibility(UsingInput() && !usingGamepad && !_creatingNewEntry);
+        _discardInputPromptGamepad.SetVisibility(UsingInput() && usingGamepad && !_creatingNewEntry);
+        _discardInputPromptGamepad.SetDisplayState(ScreenPrompt.DisplayState.GrayedOut);
         _confirmDeletePrompt.SetVisibility(_currentState == State.Deleting);
         _cancelDeletePrompt.SetVisibility(_currentState == State.Deleting);
     }
@@ -636,11 +648,14 @@ public class JournalMode : ShipLogMode
         _oneShotSource.PlayOneShot(_positiveSound, 3f);
     }
 
-    private void RenameEntryEnd()
+    private void RenameEntryEnd(bool discardChanges)
     {
         int selectedIndex = ItemList.GetSelectedIndex();
         InputField inputField = _entryInputs[ItemList.GetIndexUI(selectedIndex)];
-        Store.Data.Entries[selectedIndex].Name = inputField.text;
+        if (!discardChanges)
+        {
+            Store.Data.Entries[selectedIndex].Name = inputField.text;
+        }
         DisableInputField(inputField);
         UpdateItems();
         // This is also for an alpha or something in UI index 4 (might be required to restore rumor color too?),
@@ -654,8 +669,8 @@ public class JournalMode : ShipLogMode
         else
         {
             _currentState = State.Main;
-            _pendingSave = true;
-            _oneShotSource.PlayOneShot(_negativeSound, 3f);
+            _pendingSave |= !discardChanges;
+            _oneShotSource.PlayOneShot(discardChanges ? _negativeSound : _positiveSound, 3f);
         }
     }
 
@@ -670,17 +685,20 @@ public class JournalMode : ShipLogMode
         _oneShotSource.PlayOneShot(_positiveSound, 3f);
     }
 
-    private void EditDescriptionEnd()
+    private void EditDescriptionEnd(bool discardChanges)
     {
         int selectedIndex = ItemList.GetSelectedIndex();
-        Store.Data.Entries[selectedIndex].Description = _descInput.text;
+        if (!discardChanges)
+        {
+            Store.Data.Entries[selectedIndex].Description = _descInput.text;
+        }
         DisableInputField(_descInput);
         _descInput.gameObject.SetActive(false);
         UpdateDescriptionField();
         _currentState = State.Main;
         _creatingNewEntry = false;
-        _pendingSave = true;
-        _oneShotSource.PlayOneShot(_negativeSound, 3f);
+        _pendingSave |= !discardChanges;
+        _oneShotSource.PlayOneShot(discardChanges ? _negativeSound : _positiveSound, 3f);
     }
 
     private void EnableInputField(InputField inputField)
