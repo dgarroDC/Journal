@@ -135,6 +135,7 @@ public class JournalMode : ShipLogMode
         {
             image.raycastTarget = false;
         }
+        _questionMark.raycastTarget = false; // This is one is bothering in part of desc field...
 
         GameObject reticleGO = new GameObject("Reticle", typeof(Text));
         _reticle = reticleGO.transform as RectTransform;
@@ -555,6 +556,8 @@ public class JournalMode : ShipLogMode
             RectTransformUtility.ScreenPointToLocalPointInRectangle(transform as RectTransform, mousePos,
                 Locator.GetActiveCamera().mainCamera, out Vector2 position);
             _reticle.localPosition = new Vector3(position.x, position.y, _reticle.localPosition.z);
+            bool pressed = Mouse.current.leftButton.isPressed;
+            _reticle.localScale = Vector3.one * (pressed ? 0.85f : 1f);
         }
         _reticle.gameObject.SetActive(useCursor);
     }
