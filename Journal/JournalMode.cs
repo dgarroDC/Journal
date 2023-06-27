@@ -31,6 +31,7 @@ public class JournalMode : ShipLogMode
     private string _questionMarkDefaultText;
     private List<InputField> _entryInputs;
     private InputField _descInput;
+    private RectTransform _reticle;
 
     private readonly Color _selectionTextColor = new(0f, 0.2f, 0.3f);
     private readonly Color _editingTextColor = new(0.7f, 1f, 0.5f);
@@ -85,7 +86,7 @@ public class JournalMode : ShipLogMode
             .TryGetModApi<IEpicasAlbumAPI>("dgarro.EpicasAlbum");
         
         SetupInputFields();
-        SetupRaycast();
+        SetupRaycastAndCursor();
         SetupPrompts();
 
         _currentState = State.Disabled;
@@ -123,7 +124,7 @@ public class JournalMode : ShipLogMode
     }
     
     
-    private void SetupRaycast()
+    private void SetupRaycastAndCursor()
     {
         // GameObject.Find("Ship_Body/Module_Cabin/Systems_Cabin/ShipLogPivot/ShipLog/ShipLogPivot/ShipLogCanvas/");
         GameObject canvas = GetComponentInParent<Canvas>().gameObject;
@@ -134,6 +135,24 @@ public class JournalMode : ShipLogMode
         {
             image.raycastTarget = false;
         }
+
+        GameObject reticleGO = new GameObject("Reticle", typeof(Text));
+        _reticle = reticleGO.transform as RectTransform;
+        _reticle.parent = transform;
+        _reticle.localPosition = Vector3.zero;
+        _reticle.localEulerAngles = Vector3.zero;
+        _reticle.localScale = Vector3.one;
+        _reticle.anchorMin = Vector2.zero;
+        _reticle.anchorMax = Vector2.one;
+        _reticle.pivot = new Vector2(0.5f, 0.5f);
+        _reticle.sizeDelta = Vector2.zero;
+        Text reticleText = _reticle.GetComponent<Text>();
+        reticleText.font = _questionMark.font;
+        reticleText.text = "+";
+        reticleText.alignment = TextAnchor.MiddleCenter;
+        reticleText.fontSize = 45;
+        reticleText.color = _questionMark.color;
+        reticleText.raycastTarget = false;
     }
 
     private void SetupPrompts()
@@ -220,8 +239,6 @@ public class JournalMode : ShipLogMode
             Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on enter!", MessageType.Error);
         }
         _currentState = State.Main;
-
-        //Cursor.SetCursor(_photo.sprite.texture, Vector2.zero, CursorMode.Auto);
     }
 
     private void OpenList()
@@ -412,8 +429,6 @@ public class JournalMode : ShipLogMode
             Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on exit!", MessageType.Error);
         }
         _currentState = State.Disabled;
-        
-        Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
     }
 
     private void CloseList()
@@ -425,6 +440,7 @@ public class JournalMode : ShipLogMode
     public override void UpdateMode()
     {
         UpdatePrompts();
+        UpdateCursor();
 
         switch (_currentState)
         {
@@ -528,22 +544,19 @@ public class JournalMode : ShipLogMode
                 Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on update!", MessageType.Error);
                 break;
         }
+    }
 
-        RectTransform questionMarkTransform = (RectTransform)_photo.transform.parent.transform;
-        Vector2 mousePos = Mouse.current.position.ReadValue();
-        Vector3 worldPoint = Locator.GetActiveCamera().ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, questionMarkTransform.position.z));
-        // questionMarkTransform.position =
-        // worldPoint;
-
-        Vector2 localPoint;
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(questionMarkTransform.parent as RectTransform, mousePos,
-            Locator.GetActiveCamera().mainCamera, out localPoint);
-        ItemList.SetName("Pos="+mousePos+","+worldPoint+","+localPoint);
-       // questionMarkTransform.anchoredPosition = localPoint;
-       questionMarkTransform.localPosition = new Vector3(localPoint.x, localPoint.y, questionMarkTransform.localPosition.z);
-        //questionMarkTransform.pivot = new Vector2(0.5f, 0.5f);
-
+    private void UpdateCursor()
+    {
+        bool useCursor = UsingInput();
+        if (useCursor)
+        {
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(transform as RectTransform, mousePos,
+                Locator.GetActiveCamera().mainCamera, out Vector2 position);
+            _reticle.localPosition = new Vector3(position.x, position.y, _reticle.localPosition.z);
+        }
+        _reticle.gameObject.SetActive(useCursor);
     }
 
     private void UpdatePrompts()
