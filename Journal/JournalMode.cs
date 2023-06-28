@@ -214,8 +214,8 @@ public class JournalMode : ShipLogMode
         input.textComponent = text;
         input.caretWidth = 2; // Otherwise it's too thin
         input.selectionColor = _selectionTextColor; // Important alpha=1 for overlap in description field
+        input.transition = Selectable.Transition.None;
         input.enabled = false;
-        // input.onValueChanged.AddListener(_ => _oneShotSource.PlayOneShot(_positiveSound)); // Lower volume (NOT WORKING WHEN A LOT) 
         return input;
     }
 
