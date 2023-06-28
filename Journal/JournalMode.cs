@@ -4,6 +4,7 @@ using Journal.External;
 using OWML.Common;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.UI;
 
 namespace Journal;
@@ -561,6 +562,13 @@ public class JournalMode : ShipLogMode
         bool useCursor = UsingInput();
         if (useCursor)
         {
+            if (!_reticle.gameObject.activeSelf)
+            {
+                // Workaround to update the position on cursor enabled, otherwise for some reason the position
+                // reads as the old value before disabling even if the cursor is in the middle of the screen,
+                // the position is only corrected after moving or clicking it seems...
+                InputState.Change(Mouse.current.position, new  Vector2(Screen.width/2, Screen.height/2));
+            }
             Vector2 mousePos = Mouse.current.position.ReadValue();
             RectTransformUtility.ScreenPointToLocalPointInRectangle(transform as RectTransform, mousePos,
                 Locator.GetActiveCamera().mainCamera, out Vector2 position);
