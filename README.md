@@ -18,7 +18,7 @@ Entries without photos are displayed with orange names, similar to the entries i
 
 You can also add the "More to Explore" icon to the entries, along with the  *"There's more to explore here."* orange text item to the description. This can serve as a visual bookmark to highlight entries that require specific attention or further exploration.
 
-To create or edit entries, please note that the input fields (for the entry name and description) require keyboard usage. If you're using a gamepad, you'll need to set it aside temporarily when interacting with these fields. These also allow some usual commands like copy and paste, moving the caret or selecting text.
+To create or edit entries, please note that the input fields (for the entry name and description) require keyboard usage. If you're using a gamepad, you'll need to set it aside temporarily when interacting with these fields. These also allow some usual commands like copy and paste, moving the caret or selecting text (this can also be done using the mouse, a cursor is added while editing the fields!). After editing a text, you can either confirm or discard the changes.
 
 ![input-example](images/input-example.webp)
 
