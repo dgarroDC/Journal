@@ -199,12 +199,13 @@ public class JournalMode : ShipLogMode
         promptListRect.sizeDelta = new Vector2(150, 200);
         promptListRect.pivot = new Vector2(1f, 1f); // important x for the animation from left
         _mainPromptList = promptListGo.GetComponent<ScreenPromptList>();
+        _mainPromptList.SetMinElementDimensionsAndFontSize(17, 17, 11);
         VerticalLayoutGroup promptListLayoutGroup = promptListGo.GetComponent<VerticalLayoutGroup>();
         promptListLayoutGroup.childAlignment = TextAnchor.UpperRight;
-        promptListLayoutGroup.spacing = 0;
+        promptListLayoutGroup.spacing = 9; // This is needed from Outer Wilds Patch 14 for some reason...
         promptListLayoutGroup.childForceExpandWidth = false;
-        promptListLayoutGroup.childForceExpandHeight = false;
-        _mainPromptListAnimator = promptListGo.AddComponent<CanvasGroupAnimator>();
+        promptListLayoutGroup.childForceExpandHeight = false; // TODO: true except with 0 entries?
+        _mainPromptListAnimator = promptListGo.GetComponent<CanvasGroupAnimator>();
         _mainPromptListAnimator.SetImmediate(1f, Store.Data.ShowPrompts ? _mainPromptListShownScale : _mainPromptListHiddenScale);
     }
 
