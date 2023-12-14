@@ -40,6 +40,7 @@ public class JournalStore
         }
         else
         {
+            // TODO: Revisit this???
             _backupOnNextSave = true;
         }
     }

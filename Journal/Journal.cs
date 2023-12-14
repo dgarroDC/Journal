@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using HarmonyLib;
 using Journal.External;
 using OWML.ModHelper;
@@ -83,5 +84,15 @@ public class Journal : ModBehaviour
         return _setupDone &&
                _journalMode.UsingInput() &&
                _journalMode.OwnsInputField(inputField);
+    }
+
+    public void Update()
+    {
+        bool shiftPressed = OWInput.IsPressed(InputLibrary.shiftL) || OWInput.IsPressed(InputLibrary.shiftR);
+        if (shiftPressed && OWInput.IsNewlyPressed(InputLibrary.jump))
+        {
+            ShipDamageController shipDamageController = Locator.GetShipBody().GetComponentInChildren<ShipDamageController>();
+            shipDamageController._shipElectricalComponent.SetDamaged(!shipDamageController.IsElectricalFailed());
+        }
     }
 }

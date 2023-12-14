@@ -109,6 +109,7 @@ public class JournalMode : ShipLogMode
         ItemList.DescriptionFieldClear();
         GameObject itemTemplate = ItemList.DescriptionFieldGetNextItem().gameObject;
         // We want the input to occupy the whole visible field
+        // TODO: Issues with Large UI? Not always matching the shared description field or something?
         GameObject descInputGO = Instantiate(itemTemplate.gameObject, itemTemplate.transform.parent.parent);
         descInputGO.name = "DescriptionInput";
         RectTransform descInputRT = descInputGO.GetComponent<RectTransform>();
@@ -428,6 +429,24 @@ public class JournalMode : ShipLogMode
 
     public override void ExitMode()
     {
+        // Handle electrical failure, the input cases are really important to avoid softlock
+        _creatingNewEntry = false; // Important to do it before rename entry end to avoid going to description
+        switch (_currentState)
+        {
+            case State.Renaming:
+                RenameEntryEnd(false);
+                break;
+            case State.EditingDescription:
+                EditDescriptionEnd(false);
+                break;
+            case State.ChoosingPhoto:
+                // Just change to main here to avoid the log error, the dialog with close with null and handled there
+                _currentState = State.Main;
+                break;
+            case State.Deleting:
+                UnmarkForDeletion(); // Well, only the state to Main for the log is important here really
+                break;
+        }
         CloseList();
         // TODO: Save more often?
         if (_pendingSave)
@@ -762,10 +781,19 @@ public class JournalMode : ShipLogMode
             _pendingSave = true;
         }
         // Wait a frame to avoid closing the mode on UpdateMode() if run after this on same frame
+        // TODO: Can this cause problems when exiting on failure?
         Journal.Instance.ModHelper.Events.Unity.FireOnNextUpdate(() =>
         {
-            _currentState = State.Main;
-            OpenList();
+            // At this point we could be in Disabled because of electrical failure
+            if (_currentState == State.ChoosingPhoto)
+            {
+                _currentState = State.Main;
+                OpenList();   
+            }
+            else if (_currentState != State.Disabled)
+            {
+                Journal.Instance.ModHelper.Console.WriteLine($"Unexpected state {_currentState} on ChoosePhotoEnd!", MessageType.Error);
+            }
         });
     }
 
