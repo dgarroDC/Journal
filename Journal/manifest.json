@@ -9,3 +9,15 @@
   "dependencies": [ "dgarro.CustomShipLogModes", "dgarro.EpicasAlbum" ],
   "pathsToPreserve": [ "saves" ]
 }
+
+//Fix issues with unexpected shutdown situations (ship electrical systems damaged) on unexpected states. Particularlly, it prevents a softlock when editing an entry name or description (it also saves the changes made on them).
+
+ALSO CHECK:
+
+(lines) (o no)
+(empty)
+(empty)
+...
+
+pair impar crea o no item vacio
+Antes pasaba????
