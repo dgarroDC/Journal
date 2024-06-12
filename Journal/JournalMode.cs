@@ -409,6 +409,7 @@ public class JournalMode : ShipLogMode
                 {
                     _questionMark.gameObject.SetActive(true);
                     _photo.gameObject.SetActive(false);
+                    _questionMark.text = _questionMarkDefaultText;
                     _questionMark.text = "<color=red>X</color>";
                 }
             }
