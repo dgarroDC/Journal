@@ -4,7 +4,7 @@
   "author": "Damián Garro",
   "name": "The Hatchling's Journal",
   "uniqueName": "dgarro.Journal",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "owmlVersion": "2.13.0",
   "dependencies": [ "dgarro.CustomShipLogModes", "dgarro.EpicasAlbum" ],
   "pathsToPreserve": [ "saves" ]
