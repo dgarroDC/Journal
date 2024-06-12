@@ -11,7 +11,7 @@ on:
           type: boolean
 
 env:
-    PROJ_USERNAME: Ernesto
+    PROJ_USERNAME: dgarro
     PROJ_NAME: Journal
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
               id: check-tag
               run: echo "exists=$(git ls-remote --exit-code --tags origin ${{ env.TAG }} >/dev/null 2>&1 && echo true || echo false)" >> $GITHUB_OUTPUT
               env:
-                TAG: "v${{fromJson(steps.read-manifest.outputs.manifest).version}}"
+                TAG: ${{fromJson(steps.read-manifest.outputs.manifest).version}}
             
             - name: Output Version Info
               id: out
@@ -79,8 +79,8 @@ jobs:
               with:
                 allowUpdates: true
                 commit: ${{ github.ref_name }}
-                tag: v${{ needs.pre_job.outputs.version }}
-                name: Version ${{ needs.pre_job.outputs.version }}
+                tag: ${{ needs.pre_job.outputs.version }}
+                name: ${{ needs.pre_job.outputs.version }}
                 omitBodyDuringUpdate: true
                 artifacts: "${{ env.PROJ_USERNAME}}.${{ env.PROJ_NAME }}.zip"
                 draft: true
