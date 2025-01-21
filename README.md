@@ -24,7 +24,11 @@ To create or edit entries, please note that the input fields (for the entry name
 
 ## Savefile Management
 
-Changes made to your Journal are saved to disk when you exit the mode by either switching to another Ship Log mode or exiting the computer. The save files are stored in the "saves" folder within the mod directory. Each Outer Wilds profile has its own separate Journal, represented by a "(profile name).json" (**JSON** file). To ensure the safety of your Journal, it's recommended to back up this file (as well as any images from Épicas Album that you use), as you should do with any file you don't want to lose in general.
+Changes made to your Journal are saved to disk when you exit the mode by either switching to another Ship Log mode or exiting the computer. ⚠️**Warning, dying while editing the Journal will cause your edit to be lost**, so it is recommended to enable the "Freeze time while reading ship log" option if this is a concern. A pending update would add death as another save event to avoid this problem.
+
+The save files are stored in the "saves" folder within the mod directory. Each Outer Wilds profile has its own separate Journal, represented by a "(profile name).json" (**JSON** file). To ensure the safety of your Journal, it's recommended to back up this file (as well as any images from Épicas Album that you use), as you should do with any file you don't want to lose in general.
+
+If you select NEW EXPEDITION from the main menu on a used profile (i.e. start a new game), **your Journal will still be retained** for safety reasons. If you want a fresh save with an empty Journal, it is recommended to use a new game profile, or you have the option to manually delete the Journal file.
 
 ⚠️Please note that uninstalling the mod (not disabling it) will delete the entire mod folder, including all the saved files. Exercise caution when uninstalling the mod to avoid losing your Journal.⚠️
 
